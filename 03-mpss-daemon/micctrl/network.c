@@ -870,13 +870,13 @@ set_alt_distrib(char *newdist)
 	if (netdir) set_local_netdir(netdir);
 }
 
+/* LoongArch 移植：与 user.c 的 hkeys[]（补丁 19）保持一致 —— 去掉已废弃的
+   dsa 与协议 1 的 ssh_host_key（rsa1），加上 ed25519。LEN_KEYNAMES 由 sizeof 自动为 6。 */
 char *hostkeynames[] = {
-	"ssh_host_dsa_key",
-	"ssh_host_dsa_key.pub",
+	"ssh_host_ed25519_key",
+	"ssh_host_ed25519_key.pub",
 	"ssh_host_ecdsa_key",
 	"ssh_host_ecdsa_key.pub",
-	"ssh_host_key",
-	"ssh_host_key.pub",
 	"ssh_host_rsa_key",
 	"ssh_host_rsa_key.pub"
 };
