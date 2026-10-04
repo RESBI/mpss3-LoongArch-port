@@ -26,13 +26,31 @@ TOOLS   := $(RELROOT)/00-build-tools
 # 上游链接这棵树时用的基础参数（取自 Makefile.mpss 在 WHAT=HOST 下的展开结果）
 BASE_LD := -pthread -ldl -lrt -Wl,-z,relro,-z,now -lscif
 
+# 编译器搜索路径：只有「暂存安装」或「非 /usr 前缀」才需要显式指点。
+# 切记：PREFIX=/usr 时不要把这些目录塞进 C_INCLUDE_PATH/CPLUS_INCLUDE_PATH ——
+# /usr/include 已是系统目录，重复一次会让 libstdc++ 的
+#   #include_next <stdlib.h>
+# 跳过去、报 "stdlib.h: No such file or directory"。
+ifeq ($(DESTDIR),)
+  ifeq ($(PREFIX),/usr)
+    EXTRA_INC :=
+    EXTRA_LIB :=
+  else
+    EXTRA_INC := $(PREFIX)/include
+    EXTRA_LIB := $(PREFIX)/lib64
+  endif
+else
+  EXTRA_INC := $(DESTDIR)$(PREFIX)/include
+  EXTRA_LIB := $(DESTDIR)$(PREFIX)/lib64
+endif
+SEARCH_ENV := C_INCLUDE_PATH=$(EXTRA_INC) CPLUS_INCLUDE_PATH=$(EXTRA_INC) LIBRARY_PATH=$(EXTRA_LIB)
+
 .PHONY: all build install clean
 all: build
 
 build:
 	python3 $(TOOLS)/gen-defsym.py --pkg coi --mode defsym --out build/coi_defsym.args
-	LIBRARY_PATH=$(STAGE)/lib64:$(PREFIX)/lib64 \
-	C_INCLUDE_PATH=$(STAGE)/include CPLUS_INCLUDE_PATH=$(STAGE)/include \
+	$(SEARCH_ENV) \
 	$(MAKE) -f Makefile.mpss WHAT=HOST build/libcoi_host.so \
 		LD_FLAGS="$(BASE_LD) $$(cat build/coi_defsym.args)"
 	ln -sf libcoi_host.so build/libcoi_host.so.0

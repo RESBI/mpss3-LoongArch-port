@@ -74,6 +74,7 @@ Three rules apply everywhere:
 - **Staged installs.** Every package accepts `make install DESTDIR=/tmp/stage`. In that mode neither `ldconfig` nor `depmod` runs, and root is not required.
 - **Custom prefix.** `make install PREFIX=/usr/local` (the default is `/usr`). Note that `micctrl` is installed setuid root, so choose a sensible combination of `DESTDIR` and `PREFIX`.
 - **Kernel headers.** The module package needs them; it defaults to `/lib/modules/$(uname -r)/build`, overridable with `make install KERNEL_SRC=...`.
+- **A two-step flow is recommended.** Run `make` as your normal user first, then `sudo make install`. Installing straight with `sudo make install` performs the build as root and leaves root-owned object files in the source tree; a later rebuild as your own user then fails with `Permission denied` (`can't create objs/xxx.o`) until you run `sudo make clean` or `sudo chown -R $USER .`.
 
 The top level also has a convenience `Makefile` that installs everything in the order above (`sudo make install`, roughly 150 seconds). For debugging, install packages one at a time instead.
 

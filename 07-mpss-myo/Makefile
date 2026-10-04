@@ -17,6 +17,25 @@ CXX     ?= g++
 STAGE   := $(DESTDIR)$(PREFIX)
 RELROOT := $(CURDIR)/..
 
+# 编译器搜索路径：只有「暂存安装」或「非 /usr 前缀」才需要显式指点。
+# 切记：PREFIX=/usr 时不要把这些目录塞进 C_INCLUDE_PATH/CPLUS_INCLUDE_PATH ——
+# /usr/include 已是系统目录，重复一次会让 libstdc++ 的
+#   #include_next <stdlib.h>
+# 跳过去、报 "stdlib.h: No such file or directory"。
+ifeq ($(DESTDIR),)
+  ifeq ($(PREFIX),/usr)
+    EXTRA_INC :=
+    EXTRA_LIB :=
+  else
+    EXTRA_INC := $(PREFIX)/include
+    EXTRA_LIB := $(PREFIX)/lib64
+  endif
+else
+  EXTRA_INC := $(DESTDIR)$(PREFIX)/include
+  EXTRA_LIB := $(DESTDIR)$(PREFIX)/lib64
+endif
+SEARCH_ENV := C_INCLUDE_PATH=$(EXTRA_INC) CPLUS_INCLUDE_PATH=$(EXTRA_INC) LIBRARY_PATH=$(EXTRA_LIB)
+
 .PHONY: all build install clean
 all: build
 
@@ -29,7 +48,7 @@ MYO_FLAGS := -DMYOI_DIFF_I64 -fcommon -g -O2 -w
 build:
 	$(MAKE) -C src CC=$(CC) CXX=$(CXX) CFLAGS="$(MYO_FLAGS)" CXXFLAGS="$(MYO_FLAGS)" \
 		LDFLAGS='-lstdc++ -lm' BUILD_AND_INSTALL_MAN_PAGES=0 INSTALL_TUTORIALS=0 \
-		LIBRARY_PATH=$(STAGE)/lib64:$(PREFIX)/lib64
+		$(SEARCH_ENV)
 
 install: build
 	install -d $(STAGE)/lib64 $(STAGE)/include

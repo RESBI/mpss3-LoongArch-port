@@ -17,15 +17,32 @@ CXX     ?= g++
 STAGE   := $(DESTDIR)$(PREFIX)
 RELROOT := $(CURDIR)/..
 
+# 编译器搜索路径：只有「暂存安装」或「非 /usr 前缀」才需要显式指点。
+# 切记：PREFIX=/usr 时不要把这些目录塞进 C_INCLUDE_PATH/CPLUS_INCLUDE_PATH ——
+# /usr/include 已是系统目录，重复一次会让 libstdc++ 的
+#   #include_next <stdlib.h>
+# 跳过去、报 "stdlib.h: No such file or directory"。
+ifeq ($(DESTDIR),)
+  ifeq ($(PREFIX),/usr)
+    EXTRA_INC :=
+    EXTRA_LIB :=
+  else
+    EXTRA_INC := $(PREFIX)/include
+    EXTRA_LIB := $(PREFIX)/lib64
+  endif
+else
+  EXTRA_INC := $(DESTDIR)$(PREFIX)/include
+  EXTRA_LIB := $(DESTDIR)$(PREFIX)/lib64
+endif
+SEARCH_ENV := C_INCLUDE_PATH=$(EXTRA_INC) CPLUS_INCLUDE_PATH=$(EXTRA_INC) LIBRARY_PATH=$(EXTRA_LIB)
+
 .PHONY: all build install clean
 all: build
 
 CFLAGS_MPSS := -g -O2 -fpermissive
-BUILD_ENV   := C_INCLUDE_PATH=$(STAGE)/include CPLUS_INCLUDE_PATH=$(STAGE)/include \
-               LIBRARY_PATH=$(STAGE)/lib64:$(PREFIX)/lib64
 
 build:
-	$(BUILD_ENV) $(MAKE) -f Makefile.mpss all prefix=$(PREFIX) CC=$(CC) CXX=$(CXX) \
+	$(SEARCH_ENV) $(MAKE) -f Makefile.mpss all prefix=$(PREFIX) CC=$(CC) CXX=$(CXX) \
 		CFLAGS="$(CFLAGS_MPSS)"
 
 install: build

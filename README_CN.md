@@ -74,6 +74,7 @@ cd ../09-boot-images && sudo make install
 - **暂存安装**：任何包都支持 `make install DESTDIR=/tmp/stage`，此时不会运行 `ldconfig`/`depmod`，也不需要 root。
 - **改安装前缀**：`make install PREFIX=/usr/local`（默认 `/usr`）。注意 `micctrl` 会装成 setuid root，`DESTDIR` 与 `PREFIX` 的组合要自己保证合理。
 - **内核模块包**需要内核头文件：默认取 `/lib/modules/$(uname -r)/build`，可用 `make install KERNEL_SRC=...` 指定。
+- **建议两步走**：先以普通用户 `make`，再 `sudo make install`。直接 `sudo make install` 会以 root 身份完成构建，在源码树里留下 root 属主的目标文件；之后若再以普通用户重新构建，会因写不进去而报 `Permission denied`（表现为 `can't create objs/xxx.o`），此时先 `sudo make clean` 或 `sudo chown -R $USER .` 即可。
 
 　　顶层还有一个便利 `Makefile`，按上表顺序一次装完（`sudo make install`，约 150 秒）；调试单包时仍建议逐个安装。
 
