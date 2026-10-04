@@ -1,0 +1,4 @@
+# 开机自动加载 Xeon Phi（Knights Corner）主机驱动。
+# systemd-modules-load.service 在启动早期读取本目录；比 udev 的 modalias 自动加载更确定，
+# 因为驱动本身没有声明 MODULE_DEVICE_TABLE(pci, …)（见 host/linux.c）。
+mic

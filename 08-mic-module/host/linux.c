@@ -525,6 +525,11 @@ static struct pci_device_id mic_pci_tbl[] = {
 	{ 0, }
 };
 
+/* LoongArch 移植：声明 PCI 设备表，使 modinfo 导出 modalias
+   （pci:v00008086d0000225C… 等），这样 udev 能在设备出现时自动 modprobe mic。
+   上游没有这一行，模块只能靠 MPSS 自带的 init 脚本加载；本行不影响 probe 逻辑。 */
+MODULE_DEVICE_TABLE(pci, mic_pci_tbl);
+
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,31)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)
 #define MODE_T umode_t

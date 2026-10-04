@@ -17,6 +17,7 @@ DESTDIR        ?=
 CC             ?= gcc
 KERNEL_VERSION ?= $(shell uname -r)
 KERNEL_SRC     ?= /lib/modules/$(KERNEL_VERSION)/build
+SYSCONFDIR     ?= /etc
 STAGE          := $(DESTDIR)$(PREFIX)
 MPSS_MAKE      := $(MAKE) -f Makefile.mpss
 
@@ -32,8 +33,12 @@ install: build
 	$(MPSS_MAKE) modules_install conf_install dev_install kdev_install \
 		MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) KERNEL_VERSION=$(KERNEL_VERSION) \
 		prefix=$(PREFIX) sysconfdir=/etc INSTALL_MOD_PATH=$(DESTDIR) DESTDIR=$(DESTDIR)
+	install -d $(DESTDIR)$(SYSCONFDIR)/modules-load.d
+	install -m644 mic.modules-load $(DESTDIR)$(SYSCONFDIR)/modules-load.d/mic.conf
 	@if [ -z "$(DESTDIR)" ]; then depmod -a $(KERNEL_VERSION); fi
-	@echo "已安装 mic.ko -> /lib/modules/$(KERNEL_VERSION)/，配置到 /etc/modprobe.d 与 /etc/udev/rules.d"
+	@echo "已安装 mic.ko -> /lib/modules/$(KERNEL_VERSION)/"
+	@echo "  配置：$(SYSCONFDIR)/modprobe.d/mic.conf、$(SYSCONFDIR)/udev/rules.d/50-udev-mic.rules"
+	@echo "        $(SYSCONFDIR)/modules-load.d/mic.conf（开机自动 modprobe mic）"
 
 clean:
 	-$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) clean

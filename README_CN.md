@@ -80,7 +80,23 @@ cd ../09-boot-images && sudo make install
 
 ## 三、装完之后
 
-### 3.1 生成配置与卡镜像目录
+### 3.1 加载内核模块
+
+　　`mic.ko` **开机自动加载**，两条路都铺好了：
+
+- `/etc/modules-load.d/mic.conf`（内容一行 `mic`）—— 由 `systemd-modules-load.service` 在启动早期读取；
+- 驱动声明了 `MODULE_DEVICE_TABLE(pci, …)`，`modinfo mic` 因此会导出 `pci:v00008086d0000225C…` 这类 modalias，udev 在设备出现时也会自动 `modprobe`。
+
+　　插卡后确认一次即可：
+
+```bash
+lsmod | grep '^mic'              # 应看到 mic
+cat /sys/class/mic/mic0/state    # ready / booting / online
+```
+
+　　刚装完还没重启、想立刻用：`sudo modprobe mic`。
+
+### 3.2 生成配置与卡镜像目录
 
 ```bash
 sudo micctrl --initdefaults
@@ -88,7 +104,7 @@ sudo micctrl --initdefaults
 
 　　这一步会在 `/etc/mpss/` 生成 `mic0.conf`，在 `/var/mpss/mic0/` 生成卡端文件系统目录（MicDir），里面已经包含 `etc/passwd`（主机普通用户会被合并进去）、`etc/network/interfaces`（卡端网口）、`etc/ssh` 主机密钥、各用户 `.ssh/authorized_keys`。
 
-### 3.2 按本机情况改两行
+### 3.3 按本机情况改两行
 
 ```bash
 sudo sed -i 's|^Network .*|Network class=StaticPair micip=171.31.1.2 hostip=171.31.1.1 netbits=24 modhost=no modcard=yes mtu=64512|' /etc/mpss/mic0.conf
@@ -97,7 +113,7 @@ sudo sed -i 's|^BootOnStart .*|BootOnStart Enabled|' /etc/mpss/mic0.conf
 
 　　`modhost=no` 表示主机侧网口由你自己配（推荐，避免 MPSS 去改发行版的网络配置）；`modcard=yes` 表示卡端网络配置由 MPSS 写进 MicDir。IP 按你的实际网段改。
 
-### 3.3 起守护进程
+### 3.4 起守护进程
 
 　　用 systemd 时，写一个 `Type=simple` 的单元（**不要用 `Type=forking`**：`mpssd` 默认 fork 之后父进程会 `pause()` 永不退出，`forking` 必然超时）：
 
@@ -109,6 +125,8 @@ After=network.target
 
 [Service]
 Type=simple
+# 模块由 modules-load.d 在启动早期加载；这一行是双保险（已加载时 modprobe 直接成功）
+ExecStartPre=-/usr/sbin/modprobe mic
 ExecStart=/usr/sbin/mpssd -l
 TimeoutSec=60
 
@@ -122,7 +140,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now mpss
 
 　　不用 systemd 时直接 `sudo /usr/sbin/mpssd -l &` 亦可（`-l` 是前台、日志到屏幕）。
 
-### 3.4 主机侧网口
+### 3.5 主机侧网口
 
 ```bash
 sudo ip addr add 171.31.1.1/24 dev mic0 && sudo ip link set mic0 up
@@ -170,6 +188,14 @@ sudo micctrl --useradd=<用户名>   # 主机侧 MicDir 与运行中的卡同时
 3. **失败的 SCIF 连接会在内核里无限重试**：`micscif/micscif_api.c` 的连接等待循环在对端不应答且设备仍存活时会 `goto retry`，进程不返回用户态，`SIGTERM`／`SIGKILL` 都无法终止；只能靠重置卡或卸载模块让它退出。这是上游代码的行为，未在移植中修改。
 4. **`System.map` 是占位空文件**：没有卡内核的符号表，`mpssd` 会打一条 `mmap of System.map failed` 告警，不影响引导。
 5. **手册页**：`.1`／`.3` 等 man 页需要 `a2x`（asciidoc）生成，包装 Makefile 不构建它们。
+7. **主机内核升级后必须重编 `mic.ko`**：模块与内核版本绑定（`vermagic` 与符号 CRC），换了内核旧模块不会加载。重新构建并安装即可：
+
+```bash
+cd 08-mic-module && make clean && sudo make install
+```
+
+　　它会自动装到新内核的 `/lib/modules/$(uname -r)/updates/` 并跑 `depmod`；`/etc/modules-load.d`、`modprobe.d`、udev 规则与内核版本无关，无需重做。新内核若又改了驱动用到的接口，`make` 会报编译错误，需按报错再补一处移植补丁（本版是按 7.1.13 改过的）。
+
 6. **`05-miccheck` 的版本号是构建期常量**：`make` 时通过 `MPSS_FLASH_VERSION`／`SMC_FW_VERSION` 写入；默认值取自实测的卡（flash `391`、SMC `1.17.6900`）。换卡后如自检报版本不匹配，用新的值重跑 `make install` 即可。
 
 ## 七、卸载

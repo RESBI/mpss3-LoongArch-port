@@ -80,7 +80,23 @@ The top level also has a convenience `Makefile` that installs everything in the 
 
 ## 3. After Installing
 
-### 3.1 Generate the configuration and the card image directory
+### 3.1 Loading the kernel module
+
+`mic.ko` now loads **automatically at boot**, by two independent paths:
+
+- `/etc/modules-load.d/mic.conf` (a single line, `mic`), read early during boot by `systemd-modules-load.service`;
+- the driver declares `MODULE_DEVICE_TABLE(pci, ...)`, so `modinfo mic` exports modalias strings such as `pci:v00008086d0000225C...` and udev loads the module when the device shows up.
+
+After inserting the card, a quick check is enough:
+
+```bash
+lsmod | grep '^mic'              # should list mic
+cat /sys/class/mic/mic0/state    # ready / booting / online
+```
+
+To load it immediately — for instance right after installing, before rebooting — run `sudo modprobe mic`.
+
+### 3.2 Generate the configuration and the card image directory
 
 ```bash
 sudo micctrl --initdefaults
@@ -88,7 +104,7 @@ sudo micctrl --initdefaults
 
 This writes `/etc/mpss/mic0.conf` and builds the card-side filesystem tree (the *MicDir*) under `/var/mpss/mic0/`. The tree already contains `etc/passwd` (host user accounts are merged in), `etc/network/interfaces` for the card's interface, SSH host keys under `etc/ssh`, and each user's `.ssh/authorized_keys`.
 
-### 3.2 Adjust two lines for your machine
+### 3.3 Adjust two lines for your machine
 
 ```bash
 sudo sed -i 's|^Network .*|Network class=StaticPair micip=171.31.1.2 hostip=171.31.1.1 netbits=24 modhost=no modcard=yes mtu=64512|' /etc/mpss/mic0.conf
@@ -97,7 +113,7 @@ sudo sed -i 's|^BootOnStart .*|BootOnStart Enabled|' /etc/mpss/mic0.conf
 
 `modhost=no` means you configure the host-side interface yourself — recommended, since it keeps MPSS from rewriting your distribution's network configuration. `modcard=yes` lets MPSS write the card-side network configuration into the MicDir. Adjust the addresses to match your subnet.
 
-### 3.3 Start the daemon
+### 3.4 Start the daemon
 
 Under systemd, use a `Type=simple` unit. **Do not use `Type=forking`**: `mpssd` forks and then has the parent call `pause()` forever, so systemd would always time out.
 
@@ -109,6 +125,8 @@ After=network.target
 
 [Service]
 Type=simple
+# The module is loaded early at boot via modules-load.d; this line is belt and braces.
+ExecStartPre=-/usr/sbin/modprobe mic
 ExecStart=/usr/sbin/mpssd -l
 TimeoutSec=60
 
@@ -122,7 +140,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now mpss
 
 Without systemd, `sudo /usr/sbin/mpssd -l &` works just as well — `-l` keeps it in the foreground and logs to the terminal.
 
-### 3.4 Bring up the host-side interface
+### 3.5 Bring up the host-side interface
 
 ```bash
 sudo ip addr add 171.31.1.1/24 dev mic0 && sudo ip link set mic0 up
@@ -170,6 +188,14 @@ Code written in 2016 runs into two classes of problem on today's toolchain: **ar
 3. **A failed SCIF connection retries forever inside the kernel.** In `micscif/micscif_api.c`, the connection wait loop takes a `goto retry` when the peer does not answer and the device is still alive. The process never returns to user space, so neither `SIGTERM` nor `SIGKILL` can stop it; only resetting the card or unloading the module ends it. This is upstream behaviour and was not changed by the port.
 4. **`System.map` is an empty placeholder.** The card kernel's symbol table is not available, so `mpssd` logs `mmap of System.map failed`. It has no effect on booting.
 5. **Man pages.** The `.1`/`.3` man pages require `a2x` (asciidoc) to generate; the wrapper Makefiles do not build them.
+7. **Rebuild `mic.ko` after a host kernel update.** The module is tied to one kernel (via `vermagic` and symbol CRCs); the old module will not load on a new kernel. Rebuild and reinstall:
+
+```bash
+cd 08-mic-module && make clean && sudo make install
+```
+
+It installs into the new kernel's `/lib/modules/$(uname -r)/updates/` and runs `depmod`. The `modules-load.d`, `modprobe.d` and udev files are kernel-independent and need no changes. If the new kernel has moved one of the interfaces the driver uses, `make` will fail to compile and a further port patch is needed — this release was adapted for 7.1.13.
+
 6. **`05-miccheck`'s version numbers are build-time constants.** They are written at `make` time from `MPSS_FLASH_VERSION` and `SMC_FW_VERSION`, defaulting to the values the card under test reported (flash `391`, SMC `1.17.6900`). If the self-test reports a version mismatch on another card, rebuild with that card's values.
 
 ## 7. Uninstalling
