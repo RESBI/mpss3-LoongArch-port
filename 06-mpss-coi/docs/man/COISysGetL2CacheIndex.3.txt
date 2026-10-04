@@ -1,0 +1,30 @@
+COISYSGETL2CACHEINDEX(3)
+========================
+:doctype: manpage
+
+NAME
+----
+COISysGetL2CacheIndex - Returns the index of level 2 cache on which the caller is running.
+
+SYNOPSIS
+--------
+*#include <COISysInfo_common.h>*
+
+uint32_t COISysGetL2CacheIndex(void);
+
+DESCRIPTION
+-----------
+The *COISysGetL2CacheIndex*() call returns the index of level 2 cache on which the caller is running.
+The indexes of neighboring cores will differ by a value of one and are
+within the range zero through COISysGetL2CacheCount()-1.
+
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COISysGetL2CacheCount*() call returns the index of
+level 2 cache on which the caller is running; otherwise
+returns ((uint32_t)-1) if there was an error loading processor info.
+
+
+

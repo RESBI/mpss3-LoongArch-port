@@ -1,0 +1,44 @@
+COINOTIFICATIONCALLBACK(3)
+==========================
+:doctype: manpage
+
+NAME
+----
+COI_NOTIFICATION_CALLBACK - A callback that will be invoked to notify the
+			     user of an internal Intel® Coprocessor Offload I
+			     Infrastructure (Intel® COI)event.
+
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*typedef void '(\*COI_NOTIFICATION_CALLBACK)'(COI_NOTIFICATIONS
+'in_Type', COIPROCESS 'in_Process', COIEVENT 'in_Event', const void*
+'\*in_UserData'*);*
+
+DESCRIPTION
+-----------
+
+A callback that will be invoked to notify the user of an internal
+Intel® Coprocessor Offload Infrastructure (Intel® COI)
+event. Note that the callback is registered per process so any of the
+above notifications that happen on the registered process will receive
+the callback.
+
+As with any callback mechanism it is up to the user to make sure that
+there are no possible deadlocks due to reentrancy (ie the callback being
+invoked in the same context that triggered the notification) and also
+that the callback does not slow down overall processing. If the user
+performs too much work within the callback it could delay further
+Intel® Coprocessor Offload Infrastructure (Intel® COI)
+processing.
+
+Intel® Coprocessor Offload Infrastructure (Intel® COI)
+promises to invoke the callback for an internal event prior to
+signaling the corresponding COIEvent. For example, if a user is waiting
+for a COIEvent associated with a run function completing they will
+receive the callback before the COIEvent is marked as signaled.
+
+

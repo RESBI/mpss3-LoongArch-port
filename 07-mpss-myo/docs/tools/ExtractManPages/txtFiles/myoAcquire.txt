@@ -1,0 +1,27 @@
+myoAcquire(3)
+=============
+:doctype: manpage
+
+NAME
+----
+myoAcquire - myoAcquire is the sync point for the default arena with
+"Release Consistency". myoAcquire is used to obtain all stores of
+the default arena that have been made globally visible prior to
+this point.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoAcquire()*
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

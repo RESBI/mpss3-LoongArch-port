@@ -1,0 +1,51 @@
+COIPIPELINECREATE(3)
+====================
+:doctype: manpage
+
+NAME
+----
+COIPipelineCreate - Create a pipeline associated with a remote process.
+
+SYNOPSIS
+--------
+*#include <COIPipeline_source.h>*
+
+*COIRESULT COIPipelineCreate(COIPROCESS 'in_Process', COI_CPU_MASK 'in_Mask',
+uint32_t 'in_StackSize', COIPIPELINE* \*'out_pPipeline'*);*
+
+DESCRIPTION
+-----------
+
+The *COIPipelineCreate*() call create a pipeline associated with a remote
+process. This pipeline can then be used to execute remote functions and
+to share data using COIBuffers.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIPipelineCreate*() returns COI_SUCCESS indicating
+pipeline was successfully created; otherwise
+
+COI_INVALID_HANDLE if the in_Process handle passed in was invalid.
+
+COI_INVALID_POINTER if the out_pPipeline pointer was NULL.
+
+COI_RESOURCE_EXHAUSTED if no more COIPipelines can be created. The
+maximum number of pipelines allowed is COI_PIPELINE_MAX_PIPELINES.
+
+COI_OUT_OF_RANGE if the in_StackSize > 0 && in_StackSize < PTHREAD_STACK_MIN
+or if in_StackSize is not a multiple of a page (4096 bytes).
+
+COI_OUT_OF_RANGE if the in_Mask is set to all zeroes. If no mask
+is desired then the in_Mask should be passed as NULL, otherwise
+at least one thread must be set.
+
+COI_TIME_OUT_REACHED if establishing the communication channel
+with the remote pipeline timed out.
+
+COI_RETRY if the pipeline cannot be created due to the number of
+source-to-sink connections in use. A subsequent call to COIPipelineCreate
+may succeed if resources are freed up.
+
+COI_PROCESS_DIED if in_Process died.
+

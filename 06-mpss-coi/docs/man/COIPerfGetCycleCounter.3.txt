@@ -1,0 +1,24 @@
+COIPERFGETCYCLECOUNTER(3)
+=========================
+:doctype: manpage
+
+NAME
+----
+COIPerfGetCycleCounter - Returns a performance counter value.
+
+SYNOPSIS
+--------
+*#include <COIPerf_common.h>*
+
+uint64_t COIPerfGetCycleCounter(void);
+
+DESCRIPTION
+-----------
+The *COIPerfGetCycleCounter*() call returns a performance
+counter value that increments at a constant rate for all time and is coherent across all cores.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIPerfGetCycleCounter*() call returns current
+performance counter value otherwise 0 if no performance counter is available.

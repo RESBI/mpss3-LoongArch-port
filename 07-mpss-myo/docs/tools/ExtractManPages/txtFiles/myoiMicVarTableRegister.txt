@@ -1,0 +1,34 @@
+myoiMicVarTableRegister(3)
+==========================
+:doctype: manpage
+
+NAME
+----
+myoiMicVarTableRegister - Tell the runtime where the card side table is.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiMicVarTableRegister(void *in_pAddrOfSVarTable, int in_NumEntry)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddrOfSVarTable start address of the card side var
+table, assuming it follows the format of MyoiMicSharedVarEntry.
+
+
+ parameter: in_NumEntry number of entry in the table.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

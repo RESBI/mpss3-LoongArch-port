@@ -1,0 +1,36 @@
+myoiRemoteFuncLookupByName(3)
+=============================
+:doctype: manpage
+
+NAME
+----
+myoiRemoteFuncLookupByName - Get the address of the wrapper function by looking up the table
+by name. This API can be used when assigning a function pointer to
+remotely callable functions.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiRemoteFuncLookupByName(char *in_pFuncName,
+MyoiRemoteFuncType *out_pWrapFuncAddr)*
+
+DESCRIPTION
+-----------
+ parameter: in_pFuncName name of the function.
+
+
+ parameter: out_pWrapFuncAddr address of the wrapper function.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

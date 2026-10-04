@@ -1,0 +1,26 @@
+myoRelease(3)
+=============
+:doctype: manpage
+
+NAME
+----
+myoRelease - myoRelease is the sync point for the default arena with
+"Release Consistency". myoRelease is used to flush all prior stores
+of the default arena to be globally visible.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoRelease()*
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

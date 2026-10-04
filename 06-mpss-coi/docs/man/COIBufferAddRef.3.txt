@@ -1,0 +1,39 @@
+COIBUFFERADDREF(3)
+==================
+:doctype: manpage
+
+NAME
+----
+COIBufferAddRef - Adds a reference to the memory of a buffer.
+
+SYNOPSIS
+--------
+*#include <COIBuffer_sink.h>*
+
+*COIRESULT COIBufferAddRef(void* \*'in_pBuffer'*);*
+
+DESCRIPTION
+-----------
+The *COIBufferAddRef*() call Adds a reference to the memory of a buffer. The
+memory of the buffer will remain on the device until both a corresponding COIBufferReleaseRef()
+call is made and the run function that delivered the buffer returns.
+
+NOTES
+-----
+1.It is possible for enqueued run functions to be unable to
+execute due to all card memory being occupied by addref'ed
+buffers. As such, it is important that whenever a buffer is
+addref'd that there be no dependencies on future run functions
+for progress to be made towards releasing the buffer.
+
+2.It is important that AddRef is called within the scope of
+run function that carries the buffer to be addref'ed.
+
+On successful return, COI_SUCCESS is returned.
+
+RETURN VALUE
+------------
+Upon successful completion, *COIBufferAddRef*() returns COI_SUCCESS indicating
+that buffer ref count was successfully incremented; otherwise
+COI_INVALID_POINTER: if the buffer pointer NULL,
+COI_INVALID_HANDLE: if the buffer pointer is invalid.

@@ -1,0 +1,47 @@
+COIBUFFERCREATESUBBUFFER(3)
+===========================
+:doctype: manpage
+
+NAME
+----
+COIBufferCreateSubBuffer - Creates a sub-buffer that is a reference to a portion of an existing
+ 			    buffer.
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferCreateSubBuffer(COIBUFFER 'in_Buffer', uint64_t 'in_Length', uint64_t 'in_Offset',
+COIBUFFER* \*'out_pSubBuffer'*);*
+
+DESCRIPTION
+-----------
+The *COIBufferCreateSubBuffer*() call creates a sub-buffer that is a reference to a portion of
+an existing buffer. The returned buffer handle can be used in all API calls that the original
+buffer handle could be used in except COIBufferCreateSubBuffer. Sub buffers out of Huge Page Buffer
+are also supported but the original buffer needs to be a OPENCL buffer created with
+COI_OPTIMIZE_HUGE_PAGE_SIZE flag.
+
+When the sub-buffer is used only the corresponding sub-section of the original buffer is used or affected.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIBufferCreateSubBuffer*() call returns
+COI_SUCCESS indicating that sub-buffer was created otherwise;
+
+COI_INVALID_HANDLE if in_Buffer is not a valid buffer handle.
+
+COI_OUT_OF_RANGE if in_Length is zero, or if in_Offset + in_Length
+is greater than the size of the original buffer.
+
+COI_OUT_OF_MEMORY if allocating the buffer fails.
+
+COI_INVALID_POINTER if the out_pSubBuffer pointer is NULL.
+
+COI_NOT_SUPPORTED if the in_Buffer is of any type other than
+COI_BUFFER_OPENCL
+
+

@@ -1,0 +1,44 @@
+myoiRemoteThunkCall(3)
+======================
+:doctype: manpage
+
+NAME
+----
+myoiRemoteThunkCall - Call a remote callable function. If there are multiple arguments for
+the function, pack them to a shared buffer beforehand and take the address
+of the shared buffer as this function. After receiving the call requests
+from other peers, the arguments should be unpacked from the shared buffer
+before calling the target function. The shared buffer can also be used to
+store the return value of the function.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiRemoteThunkCall(void *in_funcThunkAddr, void *in_pArgs, int in_deviceNum)*
+
+DESCRIPTION
+-----------
+ parameter: in_funcThunkAddr pointer to function thunk in the non-coherent
+shared memory.
+
+
+ parameter: in_pArgs address of the shared buffer.
+
+
+ parameter: in_deviceNum: device ID (0-N-1) for the MIC device to run
+function call.  -1 request causes MYO to schedule an available device.
+For RPC from device to host, in_deviceNum should always be -1.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

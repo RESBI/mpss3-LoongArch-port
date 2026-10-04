@@ -1,0 +1,26 @@
+COIENGINEGETINDEX(3)
+====================
+:doctype: manpage
+
+NAME
+----
+COIEngineGetIndex - Get the information about the COIEngine executing this
+                    function call.
+
+SYNOPSIS
+--------
+*#include <COIEngine_common.h>*
+
+*COIRESULT COIEngineGetIndex(COI_DEVICE_TYPE* \*'out_pType'*, uint32_t* \*'out_pIndex'*);*
+
+DESCRIPTION
+-----------
+The *COIEngineGetIndex*() call gets the information about the COIEngine
+executing this function call.
+
+On successful return, COI_SUCCESS is returned.
+
+RETURN VALUE
+------------
+Upon successful completion, *COIEngineGetIndex*() returns COI_SUCCESS;
+otherwise COI_INVALID_POINTER if any of the parameters are NULL.

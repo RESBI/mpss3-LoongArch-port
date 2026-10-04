@@ -1,0 +1,25 @@
+COIRESULTGETNAME(3)
+===================
+:doctype: manpage
+
+NAME
+----
+COIResultGetName - Returns the string version of passed in COIRESULT.
+
+SYNOPSIS
+--------
+*#include <COIResult_common.h>*
+
+*const char** COIResultGetName(COIRESULT 'in_ResultCode');
+
+DESCRIPTION
+-----------
+The *COIResultGetName*() call Returns the string version of the passed in
+COIRESULT. Thus if COI_RETRY is passed in, this function returns the string "COI_RETRY". If the error code passed in is not valid then "COI_ERROR" will be returned.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIResultGetName*() returns string version of
+passed in COIRESULT.
+

@@ -1,0 +1,116 @@
+COIBUFFERCOPY(3)
+================
+:doctype: manpage
+
+NAME
+----
+COIBufferCopy - Copy data between two buffers.
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT
+COIBufferCopy(COIBUFFER 'in_DestBuffer',
+              COIBUFFER 'in_SourceBuffer',
+              uint64_t 'in_DestOffset',
+              uint64_t 'in_SourceOffset',
+              uint64_t 'in_Length',
+              COI_COPY_TYPE 'in_Type',
+              uint32_t 'in_NumDependencies',
+        const COIEVENTpass:[*] 'in_pDependencies',
+              COIEVENTpass:[*] 'out_pCompletion');*
+
+DESCRIPTION
+-----------
+The *COIBufferCopy*() call copies data between two buffers. It also allows
+copying within the same buffer. For copy within the same buffer, if source
+and destination regions overlap then this API returns error.
+Please note that COIBufferCopy does not follow implicit buffer
+dependencies. If a buffer is in use in a run function or has been added
+to a process using COIBufferAddRef the call to COIBufferCopy will not
+wait, it will still copy data immediately.
+This is to facilitate a usage model where a buffer is being used outside
+of a run function, for example in a spawned thread, but data still needs
+to be transferred to or from the buffer.
+Additionally this means that if more than one DMA channel is enabled,
+(See COIProcessConfigureDMA) operations to the same buffer may
+happen in parallel if they can be assigned to different DMA hardware.
+So it is highly recommended to use explicit event dependencies to
+order operations where needed.
+When a destroyed buffer (destination or source) is provided to the
+function, then behavior is unspecified.
+
+_in_DestBuffer_::
+         [in] Buffer to copy into.
+
+_in_SourceBuffer_::
+         [in] Buffer to copy from.
+
+_in_DestOffset_::
+         [in] Location in the destination buffer to start writing to.
+
+_in_SourceOffset_::
+         [in] Location in the source buffer to start reading from.
+
+_in_Length_::
+         [in] The number of bytes to copy from in_SourceBuffer into
+         in_DestinationBuffer.
+         If the length is specified as zero then length to be copied
+         is entire destination buffer's length.
+         Must not be larger than the size of in_SourceBuffer or
+         in_DestBuffer and must not over run in_SourceBuffer or
+         in_DestBuffer if offsets are specified.
+
+_in_Type_::
+         [in] The type of copy operation to use, one of either
+         COI_COPY_UNSPECIFIED, COI_COPY_USE_DMA, COI_COPY_USE_CPU.
+
+_in_NumDependencies_::
+         [in] The number of dependencies specified in the in_pDependencies
+         array. This may be 0 if the caller does not want the copy call to
+         wait for any additional events to be signaled before starting the
+         copy operation.
+
+_in_pDependencies_::
+         [in] An optional array of handles to previously created COIEVENT
+         objects that this copy operation will wait for before starting.
+         This allows the user to create dependencies between buffer copy
+         calls and other operations such as run functions and map calls. The
+         user may pass in NULL if they do not wish to wait for any
+         additional dependencies to complete before doing the copy.
+
+_out_pCompletion_::
+         [out] An optional event to be signaled when the copy has
+         completed. This event can be used as a dependency to order
+         the copy with regard to future operations.
+         If no completion event is passed in then the copy is
+         synchronous and will block until the transfer is complete.
+
+RETURN VALUE
+------------
+*COI_SUCCESS* if the buffer was copied successfully.
+
+*COI_INVALID_HANDLE* if either buffer handle was invalid.
+
+*COI_MEMORY_OVERLAP* if in_SourceBuffer and in_DestBuffer are the same buffer(or have the same parent buffer) and the source and destination regions overlap
+
+*COI_OUT_OF_RANGE* if in_DestOffset is is beyond the end of in_DestBuffer
+
+*COI_OUT_OF_RANGE* if in_SourceOffset is beyond the end of in_SourceBuffer.
+
+*COI_OUT_OF_RANGE* if in_DestOffset + in_Length exceeds the size of the in_DestBuffer
+
+*COI_OUT_OF_RANGE* if in_SourceOffset + in_Length exceeds the size of in_SourceBuffer.
+
+*COI_ARGUMENT_MISMATCH* if the in_pDependencies is non NULL but in_NumDependencies is 0.
+
+*COI_ARGUMENT_MISMATCH* if in_pDependencies is NULL but in_NumDependencies is not 0.
+
+*COI_RETRY* if in_DestBuffer or in_SourceBuffer are mapped and not COI_BUFFER_PINNED buffers or COI_BUFFER_OPENCL buffers.
+
+SEE ALSO
+--------
+*COIBufferCopyEx(3)*
+

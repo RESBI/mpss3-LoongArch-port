@@ -1,0 +1,36 @@
+myoArenaMalloc(3)
+=================
+:doctype: manpage
+
+NAME
+----
+myoArenaMalloc - Allocates size bytes from the specified arena, and returns
+the start address of the allocated memory. The memory is not
+cleared.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern void *myoArenaMalloc(MyoArena in_Arena, size_t in_Size)*
+
+DESCRIPTION
+-----------
+ parameter: in_Arena Arena handle returned by previous call to
+myoArenaCreate.
+
+
+ parameter: in_Size Size (bytes) of the required memory space.
+
+
+
+RETURN VALUE
+------------
+
+The start address of the allocated memory space.
+NULL: Failed.
+
+

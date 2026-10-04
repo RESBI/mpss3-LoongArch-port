@@ -1,0 +1,198 @@
+#!/bin/sh
+# Copyright 2010-2017 Intel Corporation.
+#
+# This library is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, version 2.1.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# Disclaimer: The codes contained in these modules may be specific
+# to the Intel Software Development Platform codenamed Knights Ferry,
+# and the Intel product codenamed Knights Corner, and are not backward
+# compatible with other Intel products. Additionally, Intel will NOT
+# support the codes or instruction set in future products.
+#
+# Intel offers no warranty of any kind regarding the code. This code is
+# licensed on an "AS IS" basis and Intel is not obligated to provide
+# any support, assistance, installation, training, or other services
+# of any kind. Intel is also not obligated to provide any updates,
+# enhancements or extensions. Intel specifically disclaims any warranty
+# of merchantability, non-infringement, fitness for any particular
+# purpose, and any other warranty.
+#
+# Further, Intel disclaims all liability of any kind, including but
+# not limited to liability for infringement of any proprietary rights,
+# relating to the use of the code, even if Intel is notified of the
+# possibility of such liability. Except as expressly stated in an Intel
+# license agreement provided with this code and agreed upon with Intel,
+# no license, express or implied, by estoppel or otherwise, to any
+# intellectual property rights is granted herein.
+
+### BEGIN INIT INFO
+# Provides: coi
+# Required-Start:
+# Required-Stop:
+# Should-Start:
+# Should-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Intel(R) COI
+# Description: Intel(R) Compiler Offload Infrastructure
+### END INIT INFO
+
+#Possible coi.conf file locations
+coi_config_file=/etc/sysconfig/coi.conf
+coi_altconfig_file=/etc/coi.conf
+
+#The defaults that *can* be overridden by a coi.conf file.
+#Simply copy all or some of these variables into a coi.conf
+#specified in one of the above paths to get custom settings.
+
+coiexec=/usr/bin/coi_daemon   #Full path of coi_daemon to launch at boot
+
+coiparams='--coiuser=micuser' #default parameters at boot
+                              # this defalults to low security with all
+                              # not requiring authentication
+                              # this line can contain any number of
+                              # parameters, see coi_daemon --help for
+                              # complete list.
+
+nofile_limit=10240            # number of open file descriptors per COI process
+memlock_limit=unlimited       # locked-in-memory address space per COI process
+
+remount_root_size=85%         #% of file system coi can use for buffers
+
+
+#Internal variables, do not change
+coi_status="offline"
+coi_exit_code=4
+
+start()
+{
+        echo "coi: Starting coi_daemon... "
+        if [ `pidof coi_daemon` ]; then
+            #We've seen small occurences in remote commands that
+            #This might not be true, i.e. its racing the shutdown
+            #from a restart, so give it one more chance
+            sleep 1
+            if [ `pidof coi_daemon`]; then
+                echo "[ ERROR ] coi_daemon is already running ..."
+                coi_return_code=0
+                return
+            fi
+        fi
+
+        if [ ! -f $coiexec ]; then
+            echo "    [ ERROR ] coi_daemon is not installed"
+            coi_return_code=3
+            return
+        fi
+
+        if [ -f $coi_config_file ]; then
+            source $coi_config_file
+        else
+            if [ -f $coi_altconfig_file ]; then
+                source $coi_altconfig_file
+            else
+                echo "     Using default values"
+            fi
+        fi
+
+        # This block will find physical card side RAM
+        # and subtract 512MB from it and set that as the maximum
+        # for the tmpfs root partition to use, this is nice
+        # as it expands and grows automatically with the installed
+        # ram on the device
+        #reserved=$((512 * 1024))
+        #totalsize=`sed -ne 's/^MemTotal: *\([0-9]\+\) kB$/\1/p' /proc/meminfo`
+        #tmpfs=$(($totalsize - $reserved))k
+        #mount / -o remount,size=$tmpfs
+
+        # Setting to 85% to allow some room for the kernel to avoid panics
+        # Filesystem remount should be done only if root is mounted as tmpfs
+        if [ -n "`mount | grep ' / ' | grep tmpfs`" ]; then
+            echo "     Remount root filesystem"
+            mount / -o remount,size=$remount_root_size
+        fi
+
+        # Check and increase ulimit if necessary
+        current_nofile_limit=`ulimit -n`
+        if [ $current_nofile_limit -lt $nofile_limit ]; then
+            echo "     Increasing ulimit -n to $nofile_limit for COI daemon"
+            ulimit -n $nofile_limit
+        else
+            echo "     ulimit -n $current_nofile_limit is equal or larger than defaults, doing nothing"
+        fi
+
+        echo "     Setting ulimit -l to $memlock_limit for COI daemon"
+        ulimit -l $memlock_limit
+
+        $coiexec $coiparams &
+        status
+        if [ $coi_return_code == 0 ]; then
+            echo "[   OK  ] coi_daemon started... "
+        else
+            echo "[ ERROR ] coi_daemon start failed..."
+        fi
+}
+
+stop()
+{
+    echo "coi: Stopping COI daemon"
+    if [ `pidof coi_daemon` ]; then
+        kill -9 `pidof coi_daemon`
+        coi_return_code=3
+    else
+        echo "coi_daemon is not running"
+        coi_return_code=3
+    fi
+}
+
+status()
+{
+    if [ `pidof coi_daemon` ]; then
+        coi_status="running pid=`pidof coi_daemon`"
+        coi_return_code=0
+    else
+        coi_status="offline"
+        coi_return_code=3
+    fi
+}
+
+
+case "$1" in
+    start)
+        start
+        exit $coi_return_code;
+        ;;
+
+    stop)
+        stop
+        exit $coi_return_code;
+        ;;
+
+    status)
+        status
+        echo "coi_daemon is $coi_status"
+        exit $coi_return_code;
+        ;;
+    force-reload)
+        stop
+        start
+        exit $coi_return_code;
+        ;;
+    restart)
+        stop
+        start
+        exit $coi_return_code;
+        ;;
+
+    *)
+        echo "Usage:"
+        echo "coi start | stop | restart | force-reload | status"
+        exit 4
+esac

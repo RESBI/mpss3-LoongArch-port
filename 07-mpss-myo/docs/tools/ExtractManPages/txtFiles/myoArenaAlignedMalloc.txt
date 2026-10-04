@@ -1,0 +1,41 @@
+myoArenaAlignedMalloc(3)
+========================
+:doctype: manpage
+
+NAME
+----
+myoArenaAlignedMalloc - Allocates size bytes from the specified arena. The
+start address of the allocated memory will be a multiple of the
+alignment, which must be a power of two.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern void *myoArenaAlignedMalloc(MyoArena in_Arena,
+size_t in_Size, size_t in_Alignment)*
+
+DESCRIPTION
+-----------
+ parameter: in_Arena Arena handle returned by previous call to
+myoArenaCreate.
+
+
+ parameter: in_Size Size (bytes) of the required memory space.
+
+
+ parameter: in_Alignment The alignment value (must be a power
+of two).
+
+
+
+RETURN VALUE
+------------
+
+The start address of the allocated memory space.
+NULL: Failed.
+
+

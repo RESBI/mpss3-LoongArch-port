@@ -1,0 +1,31 @@
+myoGetMemUsage(3)
+=================
+:doctype: manpage
+
+NAME
+----
+myoGetMemUsage - Retrieves the amount of shared memory currently used.
+myoGetMemUsage() fills in out_memUsedMB when the pointer is not NULL.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoGetMemUsage(uint64 *out_memUsedMB)*
+
+DESCRIPTION
+-----------
+ parameter: out_memUsedBytes, pointer to the current size shared memory used.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

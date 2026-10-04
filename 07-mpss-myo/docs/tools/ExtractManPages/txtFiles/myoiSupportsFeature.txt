@@ -1,0 +1,35 @@
+myoiSupportsFeature(3)
+======================
+:doctype: manpage
+
+NAME
+----
+myoiSupportsFeature - Supports runtime query to determine whether a feature is supported
+by the myo that is installed on the system. This function is intended to
+support client code to query the myo library to determine whether its set
+of capabilities are able to support the client's needs.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiSupportsFeature(MyoFeatureType myoFeature)*
+
+DESCRIPTION
+-----------
+ parameter: myoFeature The feature that is to be inquired about.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; if the feature is supported.
+MYO_FEATURE_NOT_IMPLEMENTED if the feature is not supported.
+
+(For more information, please also see the declaration of the MyoFeatureType enum declaration.)
+
+

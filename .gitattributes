@@ -1,0 +1,6 @@
+# 二进制文件：不要做行尾转换与文本 diff
+*.png        binary
+*.cpio.gz    binary
+*.gz         binary
+bzImage-*    binary
+*.jpg        binary

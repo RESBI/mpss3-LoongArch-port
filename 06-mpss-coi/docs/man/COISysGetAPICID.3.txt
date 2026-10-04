@@ -1,0 +1,27 @@
+COISYSGETAPICID(3)
+==================
+:doctype: manpage
+
+NAME
+----
+COISysGetAPICID - Returns the Advanced Programmable Interrupt Controller
+		  (APIC) ID of the hardware thread on which the caller is running.
+
+SYNOPSIS
+--------
+*#include <COISysInfo_common.h>*
+
+uint32_t COISysGetAPICID(void);
+
+DESCRIPTION
+-----------
+The *COISysGetAPICID*() call returns The Advanced Programmable Interrupt
+Controller (APIC) ID of the hardware thread on which the caller is running.
+Note that APIC IDs are unique to each hardware thread within a processor,
+but may not be sequential.
+
+RETURN VALUE
+------------
+Upon successful completion, *COISysGetAPICID*() call returns the APIC ID of
+the hardware thread on which the caller is running.
+

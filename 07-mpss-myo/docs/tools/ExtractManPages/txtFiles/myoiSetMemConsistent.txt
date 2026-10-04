@@ -1,0 +1,36 @@
+myoiSetMemConsistent(3)
+=======================
+:doctype: manpage
+
+NAME
+----
+myoiSetMemConsistent - Set part of the shared memory space to be consistent, which
+means that the consistency of this part of shared memory space needs
+to be maintained between HOST and cards.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiSetMemConsistent(void *in_pAddr, size_t in_Size)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddr The start address of the specified shared
+memory space.
+
+
+ parameter: in_size The size of the specified shared memory space.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

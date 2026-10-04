@@ -1,0 +1,76 @@
+COIBUFFERSETSTATE(3)
+====================
+:doctype: manpage
+
+NAME
+----
+COIBufferSetState - Allows developer to set where a COIBUFFER is located and when the
+		     COIBUFFER's data is moved.
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferSetState(COIBUFFER 'in_Buffer', COIPROCESS 'in_Process', COI_BUFFER_STATE 'in_State',
+COI_BUFFER_MOVE_FLAG 'in_DataMove', uint32_t 'in_NumDependencies', const COIEVENT* \*'in_pDependencies'*,
+COIEVENT* \*'out_pCompletion'*);*
+
+DESCRIPTION
+-----------
+
+The *COIBufferSetState*() call allows an experienced Intel®
+Coprocessor Offload Infrastructure (Intel® COI) developer to set where a COIBUFFER is
+located and when the COIBUFFER's data is moved. This functionality is
+useful when the developer knows when and where a buffer is going to be
+accessed. It allows the data movement to happen sooner than if the
+Intel® Coprocessor Offload Infrastructure (Intel® COI)
+runtime tried to manage the buffer placement itself. The advantage of
+this API is that the developer knows much more about their own
+application's data access patterns and can therefore optimize the data
+access to be much more efficient than the Intel® Coprocessor Offload
+Infrastructure (Intel® COI) runtime. Using this API may yield better
+memory utilization, lower latency and overall improved workload
+throughput.
+
+This API does respect implicit dependencies for buffer read/write hazards.
+For example, if the buffer is being written in one COIPROCESS and the user
+requests the buffer be placed in another COIPROCESS then this API will
+wait for the first access to complete before moving the buffer.
+
+This API is not required for program correctness. It is intended solely
+for advanced Intel® Coprocessor Offload Infrastructure (Intel® CO COI)
+developers who wish to fine tune their application performance
+Cases where "a change in state" is an error condition the change just gets
+ignored without any error. This is because the SetState can be a
+nonblocking call and in such cases we can't rely on the state of the
+buffer at the time of the call. We can do the transition checks only at the time
+when the actual state change happens (which is something in future).
+Currently there is no way to report an error from something that happens
+in future and that is why such state transitions are nop. One example is
+using VALID_MAY_DROP with COI_SINK_OWNERS when buffer is not valid at source.
+This operation will be a nop if at the time of actual state change the
+buffer is not valid at source.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIBufferSetState*() call returns
+COI_SUCCESS indicating that buffer's state was successfully changed otherwise;
+
+COI_INVALID_HANDLE if in_Buffer or in_Process is invalid.
+
+COI_NOT_SUPPORTED if the in_Buffer is of any type other than
+COI_BUFFER_NORMAL or COI_BUFFER_OPENCL.
+
+COI_ARGUMENT_MISMATCH if the in_State is COI_BUFFER_VALID_MAY_DROP
+and the in_Process is COI_PROCESS_SOURCE.
+
+COI_ARGUMENT_MISMATCH if the in_Process is COI_SINK_OWNERS and the
+COI_BUFFER_MOVE is passed as move flag.
+
+COI_MISSING_DEPENDENCY if buffer was not created on the process
+handle that was passed in.
+
+

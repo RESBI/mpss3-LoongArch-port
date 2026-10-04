@@ -1,0 +1,35 @@
+myoiSetMemNonConsistent(3)
+==========================
+:doctype: manpage
+
+NAME
+----
+myoiSetMemNonConsistent - Set part of the shared memory space to be non-consistent, which
+means that the consistency of this part of shared memory space does not
+need to be maintained between HOST and cards.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiSetMemNonConsistent(void *in_pAddr, size_t in_Size)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddr The start address of the specified shared memory space;
+
+
+ parameter: in_Size The size of the specified shared memory space;
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

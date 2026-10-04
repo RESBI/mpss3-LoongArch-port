@@ -1,0 +1,29 @@
+COIPROCESSUNLOADLIBRARY(3)
+==========================
+:doctype: manpage
+
+NAME
+----
+COIProcessUnloadLibrary - Unloads a a previously loaded shared library
+	                  from the specified remote process.
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessUnloadLibrary(COIPROCESS 'in_Process', COILIBRARY
+'in_Library');*
+
+DESCRIPTION
+-----------
+
+The *COIProcessUnloadLibrary*() call unloads a a previously loaded shared
+library from the specified remote process.
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessUnloadLibrary*() call returns
+COI_SUCCESS indicating that library was successfully unloaded otherwise;
+
+COI_INVALID_HANDLE if the process or library handle were invalid.

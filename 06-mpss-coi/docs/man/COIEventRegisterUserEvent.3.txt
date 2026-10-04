@@ -1,0 +1,30 @@
+COIEVENTREGISTERUSEREVENT(3)
+============================
+:doctype: manpage
+
+NAME
+----
+COIEventRegisterUserEvent - Register a User COIEVENT so that it can be fired.
+
+
+SYNOPSIS
+--------
+*#include <COIEvent_source.h>*
+
+*COIRESULT COIEventRegisterUserEvent(COIEVENT* \*'out_pEvent'*);*
+
+DESCRIPTION
+-----------
+The *COIEventRegisterUserWait*() call registers a User COIEVENT so that it can be fired.
+Registered event is a one shot User event; in other words once signaled it cannot be used
+again for signaling. You have to unregister and register again to enable signaling. An event
+will be reset if it is re-registered without unregistering, resulting in loss of all
+outstanding signals.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIEventRegisterUserEvent*() calls returns
+COI_SUCCESS indicating that event is successfully registered otherwise
+COI_INVALID_POINTER if out_pEvent is NULL.

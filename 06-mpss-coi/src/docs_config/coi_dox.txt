@@ -1,0 +1,133 @@
+ @image html title-software-tools.jpg  
+ 
+ 
+  <br>
+  @subpage legal "Disclaimer and Legal Information"
+   <br><br><br>
+
+ 
+ <p>%Document Number: </p>
+ <p>World Wide Web: <a href="http://developer.intel.com/software/products/" target="_blank">http://developer.intel.com</a></p>
+<br><br><br>
+
+<h4>Intel Confidential</h4>
+
+
+
+@page legal Disclaimer and Legal Information
+
+Intel Confidential - This information contains highly sensitive technological or business information which could have 
+a severely detrimental effect of disclosed to an unauthorized party. All Intel Confidential media must be labeled and 
+protected accordingly.
+
+INTEL CORPORATION MAKES NO WARRANTY OF ANY KIND WITH REGARD TO THIS MATERIAL, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  INTEL CORPORATION ASSUMES NO RESPONSIBILITY FOR ANY 
+ERRORS THAT MAY APPEAR IN THIS DOCUMENT.  INTEL CORPORATION MAKES NO COMMITMENT TO UPDATE NOR TO KEEP CURRENT THE INFORMATION 
+CONTAINED IN THIS DOCUMENT.
+THIS SPECIFICATION IS COPYRIGHTED BY AND SHALL REMAIN THE PROPERTY OF INTEL CORPORATION.  NO LICENSE, EXPRESS OR IMPLIED, 
+BY ESTOPPEL OR OTHERWISE TO ANY INTELLECTUAL PROPERTY RIGHTS  IS GRANTED  HEREIN.
+INTEL DISCLAIMS ALL LIABILITY, INCLUDING LIABILITY FOR INFRINGEMENT OF ANY PROPRIETARY RIGHTS, RELATING TO IMPLEMENTATION
+OF INFORMATION IN THIS SPECIFICATION.  INTEL DOES NOT WARRANT OR REPRESENT THAT SUCH IMPLEMENTATIONS WILL NOT INFRINGE SUCH 
+RIGHTS.
+NO PART OF THIS DOCUMENT MAY BE COPIED OR REPRODUCED IN ANY FORM OR BY ANY MEANS WITHOUT PRIOR WRITTEN CONSENT OF INTEL 
+CORPORATION.
+INTEL CORPORATION RETAINS THE RIGHT TO MAKE CHANGES TO THESE SPECIFICATIONS AT ANY TIME, WITHOUT NOTICE.
+
+Intel software products are copyrighted by and shall remain the property of Intel Corporation.  Use, duplication or 
+disclosure is subject to restrictions stated in Intel's Software License Agreement, or in the case of software delivered 
+to the government, in accordance with the software license agreement as defined in FAR 52.227-7013.
+
+The Intel logo is a registered trademark of Intel Corporation.
+*Other brands and names are the property of their respective owners.
+* Other names and brands may be claimed as the property of others.
+Copyright (C) 2007-2015, Intel Corporation. All rights reserved.
+Portions Copyright (C) 1996 John Birrell <jb@freebsd.org>. All rights reserved.
+
+Portions of this document are reprinted and reproduced in electronic form in the FreeBSD* manual pages, from IEEE* Std 
+1003.1, 2004 Edition, Standard for Information Technology -- 
+Portable Operating System Interface (POSIX*), The Open Group Base Specifications Issue 6, Copyright (C) 2001-2004 by the 
+Institute of Electrical and Electronics Engineers, Inc and
+The Open Group. In the event of any discrepancy between these versions and the original IEEE and The Open Group Standard, 
+the original IEEE and The Open Group Standard is the
+referee document. The original Standard can be obtained online at http://www.opengroup.org/unix/online.html.
+
+@page Abstract Coprocessor Offload Infrastructure Overview
+
+@section Overview
+
+The Intel® Coprocessor Offload Infrastructure (Intel® COI) is a software library designed to ease the development of software tools and applications that run on Intel® XeonPhi(TM) powered device (MIC device). The usage model is for applications that run on the host processor (e.g. Intel® Xeon® processor) to launch and communicate with workloads on one or more target devices.
+
+The Intel® Coprocessor Offload Infrastructure (Intel® COI) model exposes a pipelined programming model to the user. This model allows workloads to be run and data to be moved asynchronously, allowing the host processor, device processor, and DMA engines to stay busy. In the Intel® Coprocessor Offload Infrastructure (Intel® COI)  pipelining model, work flows from a "source" to a "sink". Developers can configure one or more command pipelines to interact between sources and sinks. Commands on these pipelines are then run in an asynchronous, in-order fashion. This pipelined usage model exists in a number of offload environments, including graphics and network devices, and has been repeatedly shown to provide a balance between high performance and programmability. This model can also be used as the underpinnings on other popular programming models, including an RPC-like environment where device work is initiated by a large number of threads on the host.
+
+The Intel® Coprocessor Offload Infrastructure (Intel® COI)  model is agnostic with respect to how applications and workloads are written.  It is a C-language API that interacts with workloads through standard API entry points, but does not impose or provide a framework for exploiting vector or thread parallelism on the host or the device.  This allows Intel® Coprocessor Offload Infrastructure (Intel® COI)  to be combined with any number of other programming models, including POSIX threads, Intel(R) Parallel Building Blocks, and Intel(R) compilers for both the host and the device.
+
+@section Abstractions
+
+Intel® Coprocessor Offload Infrastructure (Intel® COI)  exposes four key abstractions to users, allowing them to accomplish tasks that would be otherwise difficult to accomplish using just lower-level abstractions.
+@li COIEngine - This abstraction allows an application to enumerate the Intel® Coprocessor Offload Infrastructure (Intel® COI) -capable devices in the system. The capabilities and dynamic load of the devices can be determined as well.
+@li COIProcess - The COIProcess abstraction encapsulates a process created by Intel® Coprocessor Offload Infrastructure (Intel® COI)  on a remote engine.  Creating an instance of a COIProcess creates a user process on a remote engine, and having a process handle allows an application to create buffers and pipeline objects that can be used by the process.
+@li COIPipeline - A pipeline is a uni-directional, asynchronous command stream between Intel® Coprocessor Offload Infrastructure (Intel® COI)  processes.  It allows remote functions to be run on a process running on another device.  The process sending commands on a pipeline is called the "source" of the pipeline, and the process executing the commands is called the "sink" of the pipeline.
+@li COIBuffer - A COIBuffer object encapsulates data in a Intel® Coprocessor Offload Infrastructure (Intel® COI)  system.  Buffers can be created with various properties that affect their behavior.  For example, a buffers can be created such that its virtual address is the same no matter where it is used, allowing pointers to be used internally to the buffer.  An application can use a COIBuffer without thinking about if the physical memory for the buffer is in device or host memory, or it can decide to exert control over placement and movement if the application's buffer usage model lends itself to a particular data movement scheme.
+
+In addition to these key API abstractions, Intel® Coprocessor Offload Infrastructure (Intel® COI)  includes a few other useful abstractions.  The COIEvent abstraction allows for synchronization between asynchronous commands, including functions run on a COIPipeline.  And the COIPerf and COISysInfo abstractions offer utility libraries for people programming MIC devices.
+
+@page naming File and Function Naming Conventions
+
+@section Intro General Concepts
+
+Files and APIs may contain multiple version numbers, and will always contain at least one. Occasionally, you will find a minor version on a file or API. This minor version number will increment with less disruptive changes to the contents of a file or an API: new functions, signature changes, special versions of a function, etc.
+
+
+@section Headers Header Files
+
+There are three types of header files:
+@li Headers for APIs that are portable to both the source and sink. Such headers are named COI<description>_common.h. COIResult_common.h and COIEvent_common.h are examples, and are found in <install_dir>/install/common.
+@li Headers for APIs that can only be used in sink-specific code. Such headers are named COI<description>_sink.h. Examples are COIProcess_sink.h and COIBuffer_sink.h, and are found in <install_dir>/install/sink.
+@li Headers for APIs that only make sense on the source. Such headers are named COI<description>_source.h. Examples are COIProcess_source.h and COIPipeline_source.h, and are found in <install_dir>/install/source.
+
+@section APIs APIs 
+
+APIs follow a similar naming scheme to header files. Each API is named COI<sub-component><description>. Versioning in Linux is implemented using linker versioning, as described in http://sourceware.org/binutils/docs/ld/VERSION.html#VERSION.
+@code
+// *** Current Major Release 2:
+#if COI_LIBRARY_VERSION >= 2
+
+COIRESULT
+COIProcessLoadLibraryFromFile(
+            COIPROCESS          in_Process,
+    const   char*               in_pFileName,
+    const   char*               in_pLibraryName,
+    const   char*               in_LibrarySearchPath,
+            uint32_t            in_Flags,
+            COILIBRARY*         out_pLibrary);
+__asm__(".symver COIProcessLoadLibraryFromFile,"
+        "COIProcessLoadLibraryFromFile@COI_2.0");
+
+#else
+
+COIRESULT
+COIProcessLoadLibraryFromFile(
+            COIPROCESS          in_Process,
+    const   char*               in_pFileName,
+    const   char*               in_pLibraryName,
+    const   char*               in_LibrarySearchPath,
+            COILIBRARY*         out_pLibrary);
+__asm__(".symver COIProcessLoadLibraryFromFile,"
+        "COIProcessLoadLibraryFromFile@COI_1.0");
+
+#endif
+
+@endcode
+
+Currently, by default, each function binds to the earliest implementation to maintain compatibility with already existing code. Customers that wish to use the newer versions of the API can set the appropriate #define to take advantage of any new functionalities.
+
+
+/*! @defgroup COIBuffer         COIBuffer */
+/*! @defgroup COIEngine         COIEngine */
+/*! @defgroup COIResult         COIResult */
+/*! @defgroup COIPipeline       COIPipeline */
+/*! @defgroup COIProcess        COIProcess */
+
+*/ If you see an error on this line, you should force sync include\common\COIError_common.h 
+
+

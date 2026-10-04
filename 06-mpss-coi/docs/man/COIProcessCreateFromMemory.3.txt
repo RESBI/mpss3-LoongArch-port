@@ -1,0 +1,109 @@
+COIPROCESSCREATEFROMMEMORY(3)
+============================
+:doctype: manpage
+
+NAME
+----
+COIProcessCreateFromMemory - Create a remote process on the Sink and start executing
+			      its main() function.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessCreateFromMemory(COIENGINE 'in_Engine', const char*
+\*'in_pBinaryName'*, const void* \*'in_pBinaryBuffer'*, uint64_t
+'in_BinaryBufferLength', int 'in_Argc', const char* '\*\*in_ppArgv'*, uint8_t
+'in_DupEnv', const char* '\*\*in_ppAdditionalEnv'*, uint8_t 'in_ProxyActive', const
+char* '\*in_Reserved'*, uint64_t 'in_InitialBufferSpace', const char*
+\*'in_LibrarySearchPath'*, const char* \*'in_FileOfOrigin'*, uint64_t
+'in_FileofOriginOffset', COIPROCESS* \*'out_pProcess'*);*
+
+DESCRIPTION
+-----------
+
+Create a remote process on the Sink and start executing its main()
+function. This will also automatically load any dependent shared objects
+on to the device. Once the process is created, remote calls can be
+initiated by using the RunFunction mechanism found in the COIPipeline
+APIs.
+
+If instead of creating a process you only wish to check for dynamic
+library dependencies set the environment variable
+SINK_LD_TRACE_LOADED_OBJECTS to be non empty before making this call.
+
+If there are dynamic link libraries on the source file system that need to
+be preloaded when the process is created on the device, callers of this
+API can set the environment variable SINK_LD_PRELOAD to a colon separated
+list of libraries that need to be copied to the sink and preloaded as part
+of process creation.
+
+For more information on how dependencies are loaded, see
+COIProcessLoadLibraryFromMemory
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessCreateFromMemory*() call returns
+COI_SUCCESS indicating that remote process was successfully created otherwise;
+
+COI_INVALID_HANDLE if the in_Engine handle passed in was invalid.
+
+COI_INVALID_POINTER if out_pProcess was NULL.
+
+COI_INVALID_POINTER if in_pBinaryName or in_pBinaryBuffer was NULL.
+
+COI_MISSING_DEPENDENCY if a dependent library is missing from
+either SINK_LD_LIBRARY_PATH or the in_LibrarySearchPath parameter.
+
+COI_BINARY_AND_HARDWARE_MISMATCH if in_pBinaryName or any of its
+recursive dependencies were built for a target machine that does
+not match the engine specified.
+
+COI_RESOURCE_EXHAUSTED if no more COIProcesses can be created,
+possibly, but not necessarily because in_InitialBufferSpace is too
+large.
+
+COI_ARGUMENT_MISMATCH if in_Argc is 0 and in_ppArgv is not NULL.
+
+COI_ARGUMENT_MISMATCH if in_Argc is greater than 0 and in_ppArgv
+is NULL.
+
+COI_OUT_OF_RANGE if in_Argc is less than 0.
+
+COI_OUT_OF_RANGE if the length of in_pBinaryName is greater than
+or equal to COI_MAX_FILE_NAME_LENGTH.
+
+COI_OUT_OF_RANGE if in_BinaryBufferLength is 0.
+
+COI_TIME_OUT_REACHED if establishing the communication channel
+with the remote process timed out.
+
+COI_DOES_NOT_EXIST if in_FileOfOrigin is not NULL and does not
+exist.
+
+COI_ARGUMENT_MISMATCH if in_FileOfOrigin is NULL and
+in_FileOfOriginOffset is not 0.
+
+COI_INVALID_FILE if in_FileOfOrigin is not a "regular file" as
+determined by stat or if its size is 0.
+
+COI_OUT_OF_RANGE if in_FileOfOrigin exists but its size is
+less than in_FileOfOriginOffset + in_BinaryBufferLength.
+
+COI_NOT_INITIALIZED if the environment variable
+SINK_LD_TRACE_LOADED_OBJECTS is set to a non empty string and
+there are no errors locating the shared library dependencies.
+
+COI_PROCESS_DIED if at some point during the loading of the remote
+process the remote process terminated abnormally.
+
+COI_VERSION_MISMATCH if the version of Intel® Coprocessor
+Offload Infrastructure (Intel® COI) on the host is not
+compatible with the version on the device.
+
+SEE ALSO
+--------
+*COIProcessLoadLibraryFromMemory(3)*

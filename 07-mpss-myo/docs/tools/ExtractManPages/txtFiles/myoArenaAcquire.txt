@@ -1,0 +1,34 @@
+myoArenaAcquire(3)
+==================
+:doctype: manpage
+
+NAME
+----
+myoArenaAcquire - myoArenaAcquire is the sync point for "OURS" arena with
+"Release Consistency". myoArenaAcquire is used to obtain all
+stores of "OURS" arena that have been made globally visible prior
+to this point.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoArenaAcquire(MyoArena in_Arena)*
+
+DESCRIPTION
+-----------
+ parameter: in_Arena Arena handle returned by previous call to
+myoArenaCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

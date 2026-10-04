@@ -1,0 +1,51 @@
+COIBUFFERGETSINKADDRESSEX(3)
+============================
+:doctype: manpage
+
+NAME
+----
+COIBufferGetSinkAddressEx - Gets the sink's virtual address of the buffer.
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT
+COIBufferGetSinkAddressEx(COIPROCESS 'in_Process', COIBUFFER 'in_Buffer',
+                          uint64_tpass:[*] 'out_pAddress');*
+
+DESCRIPTION
+-----------
+The *COIBufferGetSinkAddressEx* gets the sink's virtual address of the
+buffer. This is the same address that is passed to the run function
+on the sink. The virtual address assigned to the buffer for use on
+the sink is fixed; the buffer will always be present at that virtual
+address on the sink and will not get a different virtual address
+across different RunFunctions. This address is only valid on the
+sink and should not be dereferenced on the Source (except for the
+special case of buffers created with the COI_SAME_ADDRESS flag).
+
+_in_Process_::
+        [in] The process for which the address should be returned.
+        Special handle value 0 can be passed to the function;
+        in this case, address for the first valid process will be returned.
+
+_in_Buffer_::
+        [in] Buffer handle.
+
+_out_pAddress_::
+        [out] pointer to a uint64_t* that will be filled with the address.
+
+*COI_SUCCESS* upon successful return of the buffer's address.
+
+*COI_INVALID_HANDLE* if the in_Process or in_Buffer handle was invalid.
+
+*COI_INVALID_POINTER* if the out_pAddress parameter was invalid.
+
+*COI_OUT_OF_RANGE* if in_Process is not valid for in_Buffer at the
+moment of calling the function.
+
+SEE ALSO
+--------
+*COIBufferGetSinkAddress(3)*
+

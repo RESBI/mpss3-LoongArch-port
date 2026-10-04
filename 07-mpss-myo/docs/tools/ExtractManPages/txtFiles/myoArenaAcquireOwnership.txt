@@ -1,0 +1,31 @@
+myoArenaAcquireOwnership(3)
+===========================
+:doctype: manpage
+
+NAME
+----
+myoArenaAcquireOwnership - Changes the ownership type of the arena to MYO_ARENA_MINE.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoArenaAcquireOwnership(MyoArena in_Arena)*
+
+DESCRIPTION
+-----------
+ parameter: in_Arena Arena handle returned by previous call to
+myoArenaCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

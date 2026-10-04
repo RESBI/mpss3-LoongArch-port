@@ -1,0 +1,45 @@
+COIPROCESSCREATEFROMFILE(3)
+===========================
+:doctype: manpage
+
+NAME
+----
+COIProcessCreateFromFile - Create a remote process on the Sink and start
+			   executing its main() function.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessCreateFromFile(COIENGINE 'in_Engine', const char*
+\*'in_pBinaryName'*, int 'in_Argc', const char* '\*\*in_ppArgv'*, uint8_t
+'in_DupEnv', const char* '\*\*in_ppAdditionalEnv'*, uint8_t 'in_ProxyActive', const
+char* '\*in_Reserved'*, uint64_t 'in_InitialBufferSpace', const char*
+\*'in_LibrarySearchPath'*, COIPROCESS* \*'out_pProcess'*);*
+
+DESCRIPTION
+-----------
+
+The *COIProcessCreateFromFile*() call creates a remote process on the Sink and
+start executing its main() function. For more details about creating a process
+see COIProcessCreateFromMemory.
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessCreateFromFile*() call returns
+COI_SUCCESS indicating that remote process was successfully created otherwise;
+
+COI_INVALID_POINTER if in_pBinaryName was NULL.
+
+COI_INVALID_FILE if in_pBinaryName is not a "regular file" as
+determined by stat or if its size is 0.
+
+COI_DOES_NOT_EXIST if in_pBinaryName cannot be found.
+
+Refer to COIProcessCreateFromMemory for additional errors.
+
+SEE ALSO
+--------
+*COIProcessCreateFromMemory(3)*

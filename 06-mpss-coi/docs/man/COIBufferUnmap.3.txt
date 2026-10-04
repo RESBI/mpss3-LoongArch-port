@@ -1,0 +1,39 @@
+COIBUFFERUNMAP(3)
+=================
+:doctype: manpage
+
+NAME
+----
+COIBufferUnmap - Disables Source access to the region of the buffer that was
+	       provided through the corresponding call to COIBufferMap.
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferUnmap(COIMAPINSTANCE 'in_MapInstance', uint32_t 'in_NumDependencies',
+const COIEVENT* \*'in_pDependencies'*, COIEVENT* \*'out_pCompletion'*);*
+
+DESCRIPTION
+-----------
+The *COIBufferUnmap*() call disables source access to the region of the buffer that
+was provided through the corresponding call to COIBufferMap. The number of calls to
+COIBufferUnmap() should always match the number of calls made to COIBufferMap().
+The data pointer returned from the COIBufferMap() call will be invalid after this call.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIBufferUnmap*() returns COI_SUCCESS indicating
+successful unmapping of the buffer otherwise;
+
+COI_INVALID_HANDLE if the passed in map instance handle was NULL.
+
+COI_ARGUMENT_MISMATCH if the in_pDependencies is non NULL but
+in_NumDependencies is 0.
+
+COI_ARGUMENT_MISMATCH if in_pDependencies is NULL but
+in_NumDependencies is not 0.
+
+

@@ -1,0 +1,38 @@
+myoiHostSharedMallocTableRegister(3)
+====================================
+:doctype: manpage
+
+NAME
+----
+myoiHostSharedMallocTableRegister - Allocate shared memory for all shared variables in the table.
+Also update local address of the shared variable with new shared address.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*MyoError myoiHostSharedMallocTableRegister(void *in_pAddrOfSVarTable, int in_NumEntry, int in_Ordered)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddrOfSVarTable start address of the shared variable table,
+assuming it follows the format of MyoiHostSharedVarEntry.
+
+
+ parameter: in_NumEntry number of entry in the table.
+
+
+ parameter: in_Ordered whether the table ordered by name.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

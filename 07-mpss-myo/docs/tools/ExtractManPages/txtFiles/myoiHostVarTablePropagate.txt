@@ -1,0 +1,37 @@
+myoiHostVarTablePropagate(3)
+============================
+:doctype: manpage
+
+NAME
+----
+myoiHostVarTablePropagate - Send the host side var table to the card side. Card side will also
+have a copy of the host side var table after this propagation, although it
+is in an internal format different than the original host side var table,
+due to implementation convenience.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiHostVarTablePropagate(void *in_pAddrOfSVarTable, int in_NumEntry)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddrOfSVarTable start address of the host side var table,
+assuming it follows the format of MyoiSharedVarEntry.
+
+
+ parameter: in_NumEntry number of entry in the table.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

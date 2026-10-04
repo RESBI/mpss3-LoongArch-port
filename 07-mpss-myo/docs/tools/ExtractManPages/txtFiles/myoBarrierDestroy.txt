@@ -1,0 +1,30 @@
+myoBarrierDestroy(3)
+====================
+:doctype: manpage
+
+NAME
+----
+myoBarrierDestroy - Destroy the barrier.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoBarrierDestroy(MyoBarrier in_Barrier)*
+
+DESCRIPTION
+-----------
+ parameter: in_Barrier the barrier handle returned by myoBarrierCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

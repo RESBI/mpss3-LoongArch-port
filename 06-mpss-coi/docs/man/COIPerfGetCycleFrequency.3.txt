@@ -1,0 +1,23 @@
+COIPERFGETCYCLEFREQUENCY(3)
+===========================
+:doctype: manpage
+
+NAME
+----
+COIPerfGetCycleFrequency - Returns the calculated system frequency in hertz.
+
+SYNOPSIS
+--------
+*#include <COIPerf_common.h>*
+
+uint64_t COIPerfGetCycleFrequency(void);
+
+DESCRIPTION
+-----------
+The *COIPerfGetCycleFrequency*() returns the calcualted system frequency in
+hertz.
+
+RETURN VALUE
+------------
+Upon successful completion, *COIPerfGetCycleFrequency*() call returns current
+system frequency in hertz.

@@ -1,0 +1,134 @@
+COIPROCESSSETCACHESIZE(3)
+=========================
+:doctype: manpage
+
+*NAME*
+----
+COIProcessSetCacheSize - Set the minimum preferred COIProcess cache size
+before cache eviction is preferred over new allocation.
+
+
+*SYNOPSIS*
+----------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessSetCacheSize(
+    const COIPROCESS 'in_Process', const uint64_t 'in_HugePagePoolSize',
+    const uint32_t 'in_HugeFlags', const uint64_t 'in_SmallPagePoolSize',
+    const uint32_t 'in_SmallFlags', uint32_t 'in_NumDependencies',
+    const COIEVENTpass:[*] 'in_pDependencies',
+    COIEVENTpass:[*] 'out_pCompletion');*
+
+
+*DESCRIPTION*
+-----------
+
+Set the minimum preferred COIProcess cache size. By default these values
+are set to 1GB. With the default size of 1GB, Intel(R) COI will only
+grow the cache with each new buffer up until the set limit is consumed,
+after which, only required to accommodate additional buffers.
+This means that after the cache preference is met, a process will act
+as conservative as possible for memory consumption.
+This API will allow users to adjust memory consumption aggressiveness.
+
+Additional performance may be gained if the user sets a value higher than
+default. With high memory consumption user can choose to trade performance
+between memory allocation cost and transfer speeds to and from the
+remote process. A last consideration is that if buffers are used only
+once, it may be best to keep a small cache size, or ensure buffers are
+fully destroyed after their use.
+
+Adjusting this value to high *may* result in out of resource conditions.
+
+_in_pProcess_::
+        [in] Handle to uniquely identify the process for which the cache
+        is to be adjusted.
+
+_in_HugePagePoolSize_::
+        [in] The suggested size of the remote huge page cache in bytes.
+        This value defaults to 1GB. A process will only allocate cache
+        memory if the current cache is smaller than this limit, or it is
+        absolutely necessary to fulfill a request, but preferring to
+        re-use existing memory and paging unused buffers back to the host
+        Increasing this value will cause a process to
+        aggressively allocate memory on demand up to this value, before
+        evicting/paging memory from the remote process back to the host
+        process.
+
+        The net result is that memory consumption is increased, but the
+        user can 'cache' more buffers on the remote process. More time
+        may be spent during first use of run functions as more memory
+        may be allocated, but subsequent run functions will likely
+        see an increase in queueing performance as the data is already
+        valid in the remote process.
+
+        Users should tune this value for optimum performance balanced
+        against memory consumption. This value does not affect 4K page
+        cache. Please use in_SmallPagePoolSize for 4K pages.
+
+_in_HugeFlags_::
+        [in] Flags to select mode or action for huge page cache. One \_MODE_
+        and one \_ACTION_ flag are specified together. Default \_MODE_ is
+        COI_CACHE_MODE_ONDEMAND_SYNC. See all COI_CACHE_MODE_* and
+        COI_CACHE_ACTION_* for other modes and actions. Default \_ACTION_
+        is COI_CACHE_ACTION_NONE.
+
+_in_SmallPagePoolSize_::
+        [in] The suggested size of the remote 4K cache in bytes. Same
+        function as in_HugePagePoolSize but affecting only 4K page cache.
+        Defaults to 1GB.
+
+_in_SmallFlags_::
+        [in] Flags to select mode or action for 4K page cache. One \_MODE_
+        and one \_ACTION_ flag are be specified together. Default \_MODE_ is
+        COI_CACHE_MODE_ONDEMAND_SYNC. See all COI_CACHE_MODE_* and
+        COI_CACHE_ACTION_* for other modes and actions.
+
+_in_NumDependencies_::
+        [in] The number of dependencies specified in the in_pDependencies
+        array. This may be 0 if the caller does not want the call to
+        wait for any events to be signaled.
+
+_in_pDependencies_::
+        [in] An optional array of handles to previously created COIEVENT
+        objects that this operation will wait for before starting.
+        This allows the user to create dependencies between asynchronous
+        calls and other operations such as run functions. The user may
+        pass in NULL if they do not wish to wait for any dependencies.
+        Only useful with \_ACTION_ flags, otherwise there is no action
+        to wait on. All \_MODE_ changes happen immediately.
+
+_out_pCompletion_::
+        [out] An optional pointer to a COIEVENT object that will be
+        signaled when the operation is complete. The user may pass in
+    	NULL if the user wants the operation to block until completed.
+        Note: This flag is not useful unless paired with a::
+              valid \_ACTION_ flag.
+
+
+
+*RETURN VALUE*
+------------
+
+Upon successful completion, *COIProcessSetCacheSize*() call returns
+*COI_SUCCESS* otherwise:
+
+*COI_INVALID_HANDLE* if the in_Process handle passed in was invalid.
+
+*COI_RESOURCE_EXHAUSTED* if no more cache can be created, possibly, but not necessarily because a pool size was set to large and COI_CACHE_ACTION_GROW_NOW was specified.
+
+*COI_NOT_SUPPORTED* if more than one \_MODE_ or \_ACTION_ was specified.
+
+*COI_NOT_SUPPORTED* if an invalid \_MODE_ or \_ACTION_ was specified.
+
+*COI_ARGUMENT_MISMATCH* if in_NumDependencies is non-zero while in_pDependencies was passed in as NULL.
+
+*COI_OUT_OF_RANGE* if one of the pool sizes was invalid.
+
+*COI_PROCESS_DIED* if at some point during the mode or action the remote process terminated abnormally. Possible due to an out of memory condition.
+
+
+NOTE
+----
+For a complete up to date list of valid \_MODE_(s) and \_ACTION_(s) please see the COIProcess_source.h header file.
+

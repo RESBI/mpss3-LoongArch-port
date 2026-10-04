@@ -1,0 +1,31 @@
+myoSharedMalloc(3)
+==================
+:doctype: manpage
+
+NAME
+----
+myoSharedMalloc - Allocates size bytes from the default arena, and returns the
+start address of the allocated memory. The memory is not cleared.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern void* myoSharedMalloc(size_t in_Size)*
+
+DESCRIPTION
+-----------
+ parameter: in_Size Size (bytes) of the required memory space.
+
+
+
+RETURN VALUE
+------------
+
+The start address of the allocated memory space.
+NULL: Failed.
+
+

@@ -1,0 +1,98 @@
+COIBUFFERCREATE(3)
+==================
+:doctype: manpage
+
+*NAME*
+----
+COIBufferCreate - Creates a buffer that can be used in RunFunctions that
+are queued in pipelines.
+
+
+*SYNOPSIS*
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferCreate(
+    uint64_t 'in_Size', COI_BUFFER_TYPE 'in_Type', uint32_t 'in_Flags',
+    const voidpass:[*] 'in_pInitData', uint32_t 'in_NumProcesses',
+    const COIPROCESSpass:[*] 'in_pProcesses', COIBUFFERpass:[*] 'out_pBuffer');*
+
+*DESCRIPTION*
+-----------
+Creates a buffer that can be used in RunFunctions that are queued in
+pipelines. The address space for the buffer is reserved when it is
+created although the memory may not be committed until the buffer is
+used for the first time. Please note that the Intel(R) Coprocessor Offload
+Infrastructure (Intel(R) COI) runtime may also allocate space for the
+source process to use as shadow memory for certain types of buffers.
+If Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI)
+does allocate this memory it will not be released or reallocated
+until the COIBuffer is destroyed.
+
+in_Size::
+        [in] The number of bytes to allocate for the buffer. If in_Size
+        is not page aligned, it will be rounded up.
+
+in_Type::
+        [in] The type of the buffer to create.
+
+in_Flags::
+        [in] A bitmask of attributes for the newly created buffer.
+        Some of these flags are required for correctness while others
+        are provided as hints to the runtime system so it can make
+        certain performance optimizations.
+
+in_pInitData::
+        [in] If non-NULL the buffer will be initialized with the data
+        pointed to by pInitData. The memory at in_pInitData must hold
+        at least in_Size bytes.
+
+in_NumProcesses::
+        [in] The number of processes with which this buffer might be used.
+
+in_pProcesses::
+        [in] An array of COIPROCESS handles identifying the processes with
+        which this buffer might be used.
+
+out_pBuffer::
+        [out] Pointer to a buffer handle. The handle will be filled in
+        with a value that uniquely identifies the newly created buffer.
+        This handle should be disposed of via COIBufferDestroy()
+        once it is no longer needed.
+
+
+
+*RETURN VALUE*
+------------
+*COI_SUCCESS* if the buffer was created
+
+*COI_ARGUMENT_MISMATCH* if the in_Type and in_Flags parameters
+        are not compatible with one another. Please see the
+        COI_VALID_BUFFER_TYPES_AND_FLAGS map above for information about
+        which flags and types are compatible.
+
+*COI_OUT_OF_RANGE* if in_Size is zero, if the bits set in
+        the in_Flags parameter are not recognized flags, or if
+        in_NumProcesses is zero. 
+
+*COI_INVALID_POINTER* if the in_pProcesses or out_pBuffer parameter
+        is NULL.
+
+*COI_NOT_SUPPORTED* if in_Type has invalid value
+
+*COI_NOT_SUPPORTED* if one of the in_Flags is COI_SINK_MEMORY.
+
+*COI_NOT_SUPPORTED* if the flags include either
+        COI_SAME_ADDRESS_SINKS or COI_SAME_ADDRESS_SINKS_AND_SOURCE and
+        COI_OPTIMIZE_HUGE_PAGE_SIZE.
+
+*COI_INVALID_HANDLE* if one of the COIPROCESS handles in the
+        in_pProcesses array does not identify a valid process.
+
+*COI_OUT_OF_MEMORY* if allocating the buffer fails.
+
+*COI_RESOURCE_EXHAUSTED* if the sink is out of buffer memory. This
+        error can also be thrown from Windows 7 operating systems if
+        COI_BUFFER_PINNED and a size larger than 4KB is requested.
+        This is due to a limitation of the Windows 7 memory management unit.
+

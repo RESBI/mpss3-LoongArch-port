@@ -1,0 +1,34 @@
+COIPIPELINEGETENGINE(3)
+=======================
+:doctype: manpage
+
+NAME
+----
+COIPipelineGetEngine - Retrieve the engine that the pipeline is associated with.
+
+SYNOPSIS
+--------
+*#include <COIPipeline_source.h>*
+
+*COIRESULT COIPipelineGetEngine(COIPIPELINE 'in_Pipeline', COIENGINE*
+\*'out_pEngine'*);*
+
+DESCRIPTION
+-----------
+
+The *COIPipelineGetEngine*() call retrieves the engine that the pipeline is
+associated with.
+
+
+RETURN VALUE
+------------
+
+Upon successful return, *COIPipelineGetEngine*() call returns COI_SUCCESS
+indicating that the engine was retrieved otherwise;
+
+COI_INVALID_HANDLE if the pipeline handle passed in was invalid.
+
+COI_INVALID_POINTER if the out_pEngine parameter is NULL.
+
+COI_PROCESS_DIED if the process associated with this engine died.
+

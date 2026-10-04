@@ -1,0 +1,45 @@
+COIENGINEGETHOSTNAME(3)
+=========================
+:doctype: manpage
+
+*NAME*
+----
+COIEngineGetHostname - Returns the remote hostname for a specified COIEngine.
+
+
+*SYNOPSIS*
+----------
+*#include <COIEngine_source.h>*
+
+*COIRESULT COIEngineGetHostname(
+    COIENGINE 'in_EngineHandle', charpass:[*] 'out_Hostname');*
+
+
+*DESCRIPTION*
+-----------
+
+This API allows for the retrieval of the hostname of the remote host which
+the passed in COIEngine is connected to. This allows for the user to ensure that
+they are using the correct COIEngine that is connected to the desired remote host.
+
+_in_EngineHandle_::
+        [in] The connected COI Engine Handle passed in by the user that is
+        used to request the hostname of the remote host connected by this COIEngine.
+
+_out_Hostname_::
+        [out] The hostname of the remote host connected by this COIEngine.
+        COI will write at most 4096 bytes and the user must make sure that the size
+        of the memory pointed by this argument is large enough.
+
+*RETURN VALUE*
+------------
+
+Upon successful completion, the *COIEngineGetHostname*() call returns
+*COI_SUCCESS* otherwise:
+
+*COI_INVALID_HANDLE* if the in_EngineHandle parameter is not valid.
+
+*COI_ERROR* if the function was unable to retrieve the hostname and/or
+            the retrieved out_hostname is NULL.
+
+*COI_INVALID_POINTER* if the out_Hostname is NULL.

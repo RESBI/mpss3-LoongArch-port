@@ -1,0 +1,18 @@
+COINOTIFICATIONCALLBACKSETCONTEXT(3)
+====================================
+:doctype: manpage
+
+NAME
+----
+COINotificationCallbackSetContext - Set the user data that will be returned in the notification callback.
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COINotificationCallbackSetContext(const void* '\*in_UserData'*);*
+
+DESCRIPTION
+-----------
+
+The *COINotificationCallbackSetContext*() call sets the user data that will be returned in the notification callback. This data is sticky and per thread so must be set prior to the Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI) operation being invoked. If you wish to set the context to be returned for a specific instance of a user event notification then the context must be set using this API prior to registering that user event with COIEventRegisterUserEvent. The value may be set prior to each Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI) operation being called to effectively have a unique UserData per callback.  Setting this value overrides any value that was set when the callback was registered and will also override any future registrations that occur.

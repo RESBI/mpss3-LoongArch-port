@@ -1,0 +1,32 @@
+myoMutexLock(3)
+===============
+:doctype: manpage
+
+NAME
+----
+myoMutexLock - Lock the mutex. If the mutex is already locked by other peers,
+the call blocks until the mutex becomes available. Currently,
+attempting to re-acquire the mutex will cause a deadlock.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoMutexLock(MyoMutex in_Mutex)*
+
+DESCRIPTION
+-----------
+ parameter: in_Mutex the mutex handle returned by myoMutexCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

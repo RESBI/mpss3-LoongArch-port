@@ -1,0 +1,21 @@
+myoiLibFini(3)
+==============
+:doctype: manpage
+
+NAME
+----
+myoiLibFini - Finalize the MYO library, all resources held by the runtime are
+released by this routine.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*void myoiLibFini()*
+
+RETURN VALUE
+------------
+void

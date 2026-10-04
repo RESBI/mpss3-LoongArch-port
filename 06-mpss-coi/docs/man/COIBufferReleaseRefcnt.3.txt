@@ -1,0 +1,50 @@
+COIBUFFERRELEASEREFCNT(3)
+=========================
+:doctype: manpage
+
+NAME
+----
+COIBufferReleaseRefcnt - Decrements the reference count on the specified buffer and process by in_ReleaseRefcnt.
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferReleaseRefcnt(COIPROCESS 'in_Process', COIBUFFER 'in_Buffer', uint64_t 'in_ReleaseRefcnt');*
+
+DESCRIPTION
+-----------
+The *COIBufferReleaseRefcnt*() call decrements the refcnt for the buffer on the specified
+COI process by in_ReleaseRefcnt.
+
+_in_Process_ ::
+     [in] The COI Process whose reference count for the specified buffer
+     the user wants to decrement.
+
+_in_Buffer_ ::
+     [in] The buffer used in the specified coi process in which the user
+     wants to decrement the reference count.
+
+_in_ReleaseRefcnt_ ::
+     [in] The value the reference count will be decremented by.
+
+
+NOTES
+-----
+_1._ When a buffer is addref'ed it is assumed that it is in use and all
+other operations on that buffer waits for ReleaseRefcnt() to happen.
+So you cannot pass the addref'ed buffer to a RunFunction while
+it is addref'd until you call ReleaseRefcnt.
+
+_2._ When Using the Host API's AddRefcnt and ReleaseRefcnt you cannot
+mix them with the card side API's AddRef and ReleaseRef therefore mixing these two
+sets of API's would have unknown results and is not recommended.
+
+RETURN VALUE
+------------
+*COI_SUCCESS* :: if the reference count was successfully decremented.
+
+*COI_INVALID_HANDLE* :: if in_Buffer or in_Process are invalid handles.
+
+*COI_OUT_OF_RANGE* :: if the reference for the specified buffer or
+     process does not exist.

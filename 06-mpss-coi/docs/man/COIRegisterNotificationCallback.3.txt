@@ -1,0 +1,48 @@
+COIREGISTERNOTIFICATIONCALLBACK(3)
+==================================
+:doctype: manpage
+
+NAME
+----
+COIRegisterNotificationCallback - Register a callback to be invoked to notify
+                                   that an internal Intel(R) Coprocessor
+                                   Offload Infrastructure (Intel(R) COI)
+                                   event has occured on the process that is
+                                   associated with the callback
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIRegisterNotificationCallback(
+    COIPROCESS 'in_Process', COI_NOTIFICATION_CALLBACK
+    'in_Callback', const void* '\*in_UserData'*);*
+
+DESCRIPTION
+-----------
+
+The *COIRegisterNotificationCallback*() call registers a callback to be invoked to notify that
+an internal Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI) event has occured on the
+process that is associated with the callback. Note that it is legal to have more than one callback registered with
+a given process but those must all be unique callback pointers. Note that setting a UserData value with
+COINotificationCallbackSetContext will override a value set when registering the callback.
+
+RETURN VALUE
+------------
+
+Upon successful return, the *COIRegisterNotificationCallback*() call returns
+COI_SUCCESS indicating that the callback was registered successfully
+otherwise;
+
+COI_INVALID_HANDLE if the in_Process parameter does not identify
+a valid process.
+
+COI_INVALID_POINTER if the in_Callback parameter is NULL.
+
+COI_ALREADY_EXISTS if the user attempts to reregister the same
+callback for a process.
+
+
+
+

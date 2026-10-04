@@ -1,0 +1,145 @@
+COIBUFFERCREATEFROMMEMORY(3)
+===========================
+:doctype: manpage
+
+*NAME*
+----
+COIBufferCreateFromMemory - Creates a buffer from some existing memory that 
+can be used in RunFunctions that are queued in pipelines.
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferCreateFromMemory(
+uint64_t 'in_Size', COI_BUFFER_TYPE 'in_Type', uint32_t 'in_Flags',
+void* \*'in_Memory'*, uint32_t 'in_NumProcesses',
+const COIPROCESS* \*'in_pProcesses'*, COIBUFFER* \*'out_pBuffer'*);*
+
+*DESCRIPTION*
+-----------
+
+Creates a buffer from some existing memory that can be used in
+RunFunctions that are queued in pipelines. If the flag COI_SINK_MEMORY
+is specified then Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI)
+will use that memory for the buffer on the sink.
+
+If that flag isn't set then the memory provided is used as backing store
+for the buffer on the source. In either case the memory must not be freed
+before the buffer is destroyed. While the user still owns the memory passed
+in they must use the appropriate access flags when accessing the buffer in
+COIPipelinRunFunction or COIBufferMap calls so that the runtime knows when the
+memory has been modified. If the user just writes directly to the memory
+location then those changes may not be visible when the corresponding
+buffer is accessed. Whatever values are already present in the memory location
+when this call is made are preserved. The memory values are also preserved when
+COIBufferDestroy is called.
+
+_in_Size_::
+        [in] The size of in_Memory in bytes. If in_Size
+        is not page aligned, it will be rounded up.
+
+_in_Type_::
+        [in] The type of the buffer to create. Only COI_BUFFER_NORMAL and
+        COI_BUFFER_PINNED buffer types are supported.
+
+_in_Flags_::
+        [in] A bitmask of attributes for the newly created buffer.
+        Some of these flags are required for correctness while others
+        are provided as hints to the runtime system so it can make
+        certain performance optimizations. Note that the flag
+        COI_SAME_ADDRESS_SINKS_AND_SOURCE is still valid but may fail
+        if the same address as in_Memory can not be allocated on the sink.
+
+_in_Memory_::
+        [in] A pointer to an already allocated memory region
+        that should be turned into a COIBUFFER. Although the user still
+        owns this memory they should not free it before calling
+        COIBufferDestroy. They must also only access the memory using
+        COIBUFFER semantics, for example using COIBufferMap/COIBufferUnmap
+        when they wish to read or write the data. There are no alignment
+        or size requirements for this memory region.
+
+        WARNING:
+        Since the backing memory passed in can be the target of a DMA
+        the caller must ensure that there is no call to clone(2) (without
+        the CLONE_VM argument) during the life of this buffer. This
+        includes higher level functions that call clone such as fork(2),
+        system(3), popen(3), among others).
+
+        For forked processes, Linux uses copy-on-write semantics for
+        performance reasons. Consequently, if the parent forks and then
+        writes to this memory, the physical page mapping changes causing
+        the DMA to fail (and thus data corruption).
+
+        In Linux you can mark a set of pages to not be copied across
+        across the clone by calling madvise(2) with an argument of
+        MADV_DONTFORK and then safely use that memory in this scenario.
+        Alternately, if the memory is from a region marked MAP_SHARED,
+        this will work.
+
+_in_NumProcesses_::
+        [in] The number of processes with which this buffer might be used.
+        If the flag COI_SINK_MEMORY is specified then this must be 1.
+
+_in_pProcesses_::
+        [in] An array of COIPROCESS handles identifying the processes with
+        which this buffer might be used.
+
+_out_pBuffer_::
+        [out] Pointer to a buffer handle. The handle will be filled in
+        with a value that uniquely identifies the newly created buffer.
+        This handle should be disposed of via COIBufferDestroy()
+        once it is no longer needed.
+
+
+
+*RETURN VALUE*
+------------
+
+Upon successful completion, *COIBufferCreateFromMemory*() returns COI_SUCCESS indicating
+that the buffer is successfully created otherwise:
+
+*COI_NOT_SUPPORTED* if the in_Type value is not COI_BUFFER_NORMAL,
+        COI_BUFFER_PINNED, or COI_BUFFER_OPENCL.
+
+*COI_NOT_SUPPORTED* if in_Memory is read-only memory
+
+*COI_NOT_SUPPORTED* if one of the in_Flags is COI_SINK_MEMORY and
+        in_Type is not COI_BUFFER_NORMAL
+
+*COI_NOT_SUPPORTED* if the flag COI_SAME_ADDRESS_SINKS is set
+
+*COI_NOT_SUPPORTED* if the flag COI_SAME_ADDRESS_SINKS_AND_SOURCE is
+        set
+
+*COI_ARGUMENT_MISMATCH* if the in_Type and in_Flags parameters
+        are not compatible with one another. Please see the
+        COI_VALID_BUFFER_TYPES_AND_FLAGS map above for information about
+        which flags and types are compatible.
+
+*COI_ARGUMENT_MISMATCH* if the flag COI_SINK_MEMORY is specified and
+        in_NumProcesses > 1.
+
+*COI_ARGUMENT_MISMATCH* if the flags COI_SINK_MEMORY and
+        COI_OPTIMIZE_HUGE_PAGE_SIZE are both set.
+
+*COI_OUT_OF_RANGE* if in_Size is zero, if the bits set in
+        the in_Flags parameter are not recognized flags, or if
+        in_NumProcesses is zero.
+
+*COI_INVALID_POINTER* if in_Memory, in_pProcesses or
+        out_pBuffer parameter is NULL.
+
+*COI_INVALID_HANDLE* if one of the COIPROCESS handles in the
+        in_pProcesses array does not identify a valid process.
+
+*NOTE*
+----
+Use of this function is highly discouraged if the calling program
+program forks at all (including calls to system(3), popen(3), or similar
+functions) during the life of this buffer. See the discussion around the
+in_Memory parameter below regarding this.
+
+

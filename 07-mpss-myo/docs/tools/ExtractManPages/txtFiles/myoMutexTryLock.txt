@@ -1,0 +1,32 @@
+myoMutexTryLock(3)
+==================
+:doctype: manpage
+
+NAME
+----
+myoMutexTryLock - Try to lock the mutex. myoMutexTryLock is equivalent to
+myoMutexLock, except that myoMutexLock will return immediately if
+the mutex is already locked.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoMutexTryLock(MyoMutex in_Mutex)*
+
+DESCRIPTION
+-----------
+ parameter: in_Mutex the mutex handle returned by myoMutexCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

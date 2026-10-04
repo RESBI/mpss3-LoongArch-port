@@ -1,0 +1,675 @@
+
+         Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI)
+              for Intel(R) Many Integrated Core Architecture
+                      (Intel(R) MIC Architecture)
+                             Release Notes
+
+
+
+I. Introduction
+
+  This file describes what's new in this release, system requirements
+  and known issues.
+
+  This release provides developers with all of the necessary binaries,
+  libraries and include files to develop applications using the
+  Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI) for the
+  Intel(R) MIC* Architecture.
+
+  Additionally, this release includes a set of tutorial applications
+  that are intended to be instructional and/or a starting point for
+  developers who are interested in writing programs using Intel(R)
+  Coprocessor Offload Infrastructure (Intel(R) COI).
+
+  For more information, please refer to the Additional Information
+  section below.
+
+  *MIC is the architecture that the Intel(R) Xeon Phi(TM)
+   product family is based on.
+
+II. What's New
+
+Release 3.7
+
+  Removed pinned buffers
+    This functionality is removed from the implementation to simplify
+    the COI stack. COI_BUFFER_PINNED value is renamed to 
+    COI_BUFFER_RESERVED_3 so COI_BUFFER_OPENCL value is still the same.
+
+  Removed _Dynamic authentication mode
+    _Dynamic authentication mode is removed.
+
+  Removed KNF support
+    Support for KNF is removed from the COI stack. The definition
+    of COI_ISA_KNF is still present to maintain backward compatility.
+
+Release 3.6
+  New API: COIProcessLoadSinkLibraryFromFile
+    This API allows the user to request loading a dynamically linked
+    library from source file system into a program running on a sink.
+    The API can only be called from a function running on the sink.
+
+  Intel(R) COI can now be compiled on Red Hat 7.x
+    It is now possible to compile the Intel(R) COI on Red Hat
+    version 7.0 and newer.
+
+  Support for PIE binaries
+    Position Independent Executable binaries are now supported by COI
+    and can be loaded to the sink using COIProcessCreateFromFile and
+    COIProcessCreateFromMemory API calls. Also, micnativeloadex
+    tool supports the PIE binaries.
+
+  Deprecation of COI_BUFFER_PINNED buffer type
+    COI_BUFFER_PINNED buffer type is deprecated starting from
+    release 3.6 and will be removed in future releases. There was little
+    to no interest among the users in using this buffer type.
+    Its removal will allow for focusing on other features.
+
+  Deprecation of _Dynamic authentication mode
+    _Dynamic authentication mode is deprecated and may not work in any
+    configuration. It will be removed in future releases.
+
+  Deprecation of COI_ISA_KNF
+    Support for KNF (L1OM) hardware is deprecated and will be removed
+    in future releases.
+
+Release 3.5
+  New API: COIEventRegisterCallback
+    This API allows the user to register a single completion event for
+    an asynchronous callback. The user can pass in the function which the
+    runtime will call when the event is completed internally. This will
+    fire before COIEventWait is notified. Could be used to update a user
+    state machine or table. Callbacks should be kept to very minimal
+    runtime.
+
+  New API: COIProcessConfigureDMA
+    This API allows the user to configure how COI uses the HW DMA channels
+    that the underlying communication layer provides. In this release
+    the default configuration of a single DMA per COIProcess is maintained.
+    The user can choose to enable multiple channels for bi-directional
+    optimization. For more information see COIProcess_source.h.
+
+  New API: COIBufferGetSinkAddressEx
+    This API allows the user to get the virtual address of a buffer from
+    a specified COIProcess. This is an extension of COIBUfferGetSinkAddress
+    API - this new function has one additional argument that specifies
+    a single COIProcess. If zero is passed instead of a valid process handle,
+    the function will behave the same as COIBufferGetSinkAddress.
+
+  Removed streaming buffers
+    This functionality is removed from the implementation to simplify
+    the COI stack. COI_BUFFER_STREAMING_TO_SINK and COI_BUFFER_STREAMING_TO_SOURCE
+    values are renamed to COI_BUFFER_RESERVED_1 and COI_BUFFER_RESERVED_2
+    respectively, so COI_BUFFER_PINNED value is still the same.
+
+  coi_daemon configurable temp directory
+    Introduced ability for users to configure the temp directory used
+    by the coi_daemon on the card by specifying the temp directory as an
+    argument to the coi_daemon execution, --tempDIR=<directory_path>. With
+    this new feature users will be able to set the temp directory that COI
+    will use on the card for all temp files created during COI process, and
+    run function execution. For more information on this new argument please
+    refer to the coi_daemon --help.
+
+  New environment variable: COI_HOST_THREAD_AFFINITY
+    Introduced ability for users to configure the CPU Affinity for all threads
+    spawned by COI on the host including the User Event, Pipeline, and DMA async
+    threads. This allows users to prevent COI threads from interfering with
+    their workload latency performance by forcing COI threads to run on CPUs
+    not used by their workload. To use this new functionality one must set
+    the env var COI_HOST_THREAD_AFFINITY to a comma delimited list of CPUs to be
+    used for all COI host threads, ex: COI_HOST_THREAD_AFFINITY=0,1,2,3 will
+    tell COI to set all new threads created on the host to use CPUs 0,1,2,3.
+    For this env var to take effect for your workload it must be set before the
+    threads are created, so before COIProcessCreate.
+
+  COI User Authentication Available in Windows
+    We have brought the same support to Windows as Linux.
+    The coi_daemon for Windows host now honors the mode that allows
+    system administrators to configure the coi_daemon to spawn processes
+    as the same user on the host. This is setup via the /etc/coi.conf or
+    /etc/sysconfig/coi configuration files. This is supported through the
+    --coiuser option when launching the coi_daemon directly, or through the
+    coiparams='--coiuser=<option>'. See the /etc/init.d/coi for samples
+    By default it is set as:
+        coiparams='--coiuser=micuser'
+    To set authenticated users use:
+        coiparams='--coiuser=_Authorized'
+
+    Help on this --coiuser parameter can be seen by running the coi_daemon
+    on the card with the --help option.
+
+    Example: (as root or admin user)
+        [mic0]#echo coiparams='--coiuser=_Authorized' > /etc/coi.conf
+        [mic0]#/etc/init.d/coi restart
+
+    It is important to note that COI will convert user names with the same
+    method as micctrl when doing authentication on the Phi cards. All spaces
+    are converted to underscores, '_', and all characters are converted to
+    lowercase.
+
+Release 3.4
+  New API: COIBufferWriteMultiD, COIBufferReadMultiD
+    New API's introduced COIBufferWriteMultiD() and COIBufferReadMultiD()
+    Each API takes two struct arr_desc parameters in place of length which
+    describe non-contiguous memory for reading and writing buffers. The purpose
+    of these new API's is to improve performance in applications dealing with
+    non-contiguous memory and matrices by eliminating some overhead. For more
+    details on the API's and the new structure, please see the COIBuffer_source.h
+    file or the COIBufferWriteMultiD and COIBufferReadMultiD man pages.
+
+Release 3.3
+  New API: COIBufferAddRefcnt, COIBufferReleaseRefcnt
+    To provide better performance when managing buffer reference counts
+    new API's have been introduced. COIBufferAddRefcnt() and
+    COIBufferReleaseRefcnt() provide the user the ability to modify buffer
+    refcnts per COIProcess from the host process instead of requiring the user
+    to modify these counts from the sink process. These new API's allow buffer
+    refcnt manipulation to be processed without incurring the overhead of extra
+    SCIF communication to the host which greatly increases the performance
+    of these operations. For more details please see the COIBuffer_source.h file.
+
+  Several bug fixes and perf enhancements for highly pipelined scenarios
+    should now provide higher throughput for users with workloads that use
+    multi-pipelines and could also lead to card threads in COI applications
+    becoming more responsive.
+
+Release 3.2
+  New APIs: COIBufferWriteEx, COIBufferCopyEx
+    New API's introduced COIBufferWriteEx() and COIBufferCopyEx()
+    Each new API takes an extra 2nd parameter allow the user to specify
+    a destination process for the buffer. This will effectively
+    make the destination buffer exclusively valid in the process
+    specified. It will invoke the proper DMA operations in the background
+    to collate the data from its various regions all into the specified
+    process. Please see the COIBuffer_source.h file for more details.
+
+  New API: COIProcessSetCacheSize
+    New API introduced COIProcessSetCacheSize() to be able to tune the
+    caching algorithm and memory consumption aggressiveness. Please see
+    COIProcess_source.h for more details.
+
+  Various Bug Fixes and performance enhancements with COIBufferAddRef
+    and COIBufferReleaseRef. Overall the manually created reference counts
+    should be a large percentage faster now for most users.
+
+Release 3.1.1-3
+
+  coitrace and micnativeloadex both received new -V option
+    to show version information.
+
+  COI_OPTIMIZE_NO_DMA flag introduced into COIBufferCreate() options.
+    This new flag allows delayed memory pinning. This speeds up buffer
+    creation, but may slow down the initial buffer DMA transfer.
+
+Release 3.1
+
+  coi_daemon port is now configurable
+    The option to have the coi_daemon now listen on a custom SCIF port is now
+    available. This option can be added to the coiparams variable in
+    the coi.conf file. Please run coi_daemon with --help for more information.
+
+    COI_DAEMON_PORT must be set in the environment on the HOST in order
+    for the host application to correctly use the customized port.
+    export COI_DAEMON_PORT=<coi_daemon port>
+
+  Maximum number of COIPipelines has been increased to 512, up from 128
+    This feature was also back ported to Release 3.0 and the Gold+4 Hotfix.
+    To fully use this option an increase in ulimit was necessary.
+    The coi_daemon now defaults to using 10240 for the nofile (-n) setting.
+    It is is recommended that the user also increase the ulimit -n on the host
+    if planning on using a large number of pipelines. Additionally increasing
+    the number of allowed processes may be required for full use of this
+    feature. It is important to note that keeping more actively working
+    pipelines than the number of HW threads on the Intel(R) Xeon Phi
+    card will negatively impact performance.
+
+  COI User Authentication Available in Linux
+    The coi_daemon now supports a new mode that allows system administrators
+    to configure the coi_daemon to spawn processes as the same user on the
+    host. This is setup via the /etc/coi.conf or /etc/sysconfig/coi
+    configuration files. This is supported through the --coiuser option when
+    launching the coi_daemon directly, or through the
+    coiparams='--coiuser=<option>'. See the /etc/init.d/coi for samples
+    By default it is set as:
+        coiparams='--coiuser=micuser'
+    To set authenticated users use:
+        coiparams='--coiuser=_Authorized'
+
+    Help on this --coiuser parameter can be seen by running the coi_daemon
+    on the card with the --help option.
+
+    Example:
+        [mic0]#echo coiparams='--coiuser=_Authorized' > /etc/coi.conf
+        [mic0]#/etc/init.d/coi restart
+
+  2MB Page Caching and Performance
+    COIBuffers allocated with 2MB pages (see documentation for flags)
+    will now be cached by the sink application. This feature was only
+    previously available for COIBuffers using 4K pages. This will provide
+    a large performance enhancements for programs using the
+    COI_OPTIMIZE_HUGE_PAGE_SIZE flag for buffer creation. Do be aware that
+    the Linux kernel allocates 2MB pages in a different pool of memory.
+    Memory allocated into the 2MB page pool will not be returned to the 4K
+    pool until the program exits. This is a limitation of this performance
+    feature to be aware of until a solution is implemented to reclaim these
+    pages dynamically.
+
+
+  micnativeloadex utility standard in Windows
+    micnativeloadex is a utility that has been around a while
+    but is now included standard into both the Windows and Linux
+    installation packages. It is a utility that can run natively
+    compiled programs from the host, directly on the card. Also new
+    is the installation path for micnativeloadex, in that it is now
+    part of the standard executable path, so it will be runnable
+    without having to use a full path in order to launch it.
+
+    For full help on its usage and syntax, please run it at
+    the command prompt with a -h, i.e. "micnativeloadex -h"
+
+Release 3.0
+
+  coitrace and micnativeloadex installed into the system search path
+    In previous releases these utilities were not in the system path.
+    To be used, they required the full explicit path, or to be copied
+    into the current working directory. Now they can be run from anyplace
+    with the default installation.
+
+
+  Card Daemon Init Script fully Linux compliant
+    /etc/init.d/coi now supports all the standard Linux
+    commands ( start | stop | restart | force-reload | status ).
+    These commands on the card can be used to start, stop and
+    query the status of the daemon. It also supports configuration
+    files through /etc/sysconfig/coi.conf or /etc/coi.conf, though
+    /etc/sysconfig/coi.conf will be used first if present.
+
+    Configurable parameters and their defaults are:
+
+    coiexec=/usr/bin/coi_daemon   #Full path of coi_daemon to launch at boot
+
+    coiparams='--coiuser=micuser' #default parameters at boot
+                                  # this defaults to low security with all
+                                  # not requiring authentication
+                                  # this line can contain any number of
+                                  # parameters, see coi_daemon --help for
+                                  # complete list.
+
+    fdmax=10240                   #max file descriptors per COI process
+                                  # Linux default is 1024
+
+    remount_root_size=85%         #% of file system coi can use for buffers
+
+
+    Please see the /etc/init.d/coi file for a complete list that applies
+    to the current release. For information on how to keep the coi.conf file
+    persistent between boot cycles, please read the documentation on micctrl
+    and file overlays.
+
+Prior to Release 3.0
+
+  Optional Enhanced Security
+    The user now has the ability to use a new set of functionality for
+    improved security between COI Processes created on the card.
+    by calling coi_daemon with --coiuser=_Dynamic the daemon will
+    generate a new user for each COI Process spawned on the card
+    such that each COI Process will be owned by this new user
+    and only have access to its own created temp files and directories
+    effectively isolating all COI Processes from each other for better
+    security. To make the coi_daemon launch with this setting by
+    default modify the file at /opt/intel/mic/coi/config/coi on the host
+    and change the line with coiparams='--coiuser=micuser' to coiparams='--coiuser=_Dynamic'.
+    With this change whenever you start the mpss service the daemon will start with
+    the new functionality by default.
+
+  Windows Support
+    In limited beta testing
+
+  Proxy Filesystem is deprecated
+    The user accessible file proxy which is configured using the
+    COIProcessCreate* APIs is now deprecated. While this feature is
+    still available in the current release, when running the coi_daemon
+    as root, it will be removed completely in a future release.
+    Users who require sink side access to the source filesystem
+    should start migrating to using standard NFS mechanisms.
+
+  COIProxyFlush
+    Users that need certain guarantees about proxy IO completion
+    inside a sink run function can use this new API. Please see
+    COIProcess_sink.h for more information.
+
+  More options loading libraries
+    The COIProcessLoadLibrary* APIs now take a flags parameter that
+    gives callers more control about how the library gets loaded.
+    A common example is that some users would like deep bind
+    behavior when loading libraries. For more information, please
+    see the COIProcessLoadLibrary* documentation in the
+    COIProcess_source.h header.
+
+  Tracing Utility
+    coitrace located under /usr/bin directory is a newly added
+    diagnostic and debugging tool. It intercepts and records all Intel(R)
+    Coprocessor Offload Infrastructure calls made by the process being
+    traced. The name of each Intel(R) Coprocessor Offload Infrastructure
+    (Intel(R) COI) call and its arguments are printed on standard error
+    or the file specified by -file flag. libcoitracelib.so located under
+    the same directory is required by coitrace.
+      Usage:
+        coitrace <options> coi_binary_source <args>
+          options:
+            -buffer         Enable buffer trace
+            -engine         Enable engine trace
+            -event          Enable event trace
+            -pipeline       Enable pipeline trace
+            -process        Enable process trace
+            -short          Only print the API name
+            -file=          File to log to, can also be stdout or
+                            stderr
+            -lib=           Path to the libcoitracelib.so
+        By default tracing is turned on for all modules.
+
+  COIBuffer Maximum allocation limited by ramfs size.
+    The amount of buffer memory available to Intel(R) Coprocessor Offload
+    Infrastructure (Intel(R) COI) on the Intel(R) Xeon Phi(TM) coprocessor
+    card is limited by the available ramfs space on the card. By default
+    this is set at 85% of physical RAM.
+    Allocating more buffer space than this will, in most cases,
+    result in COI_RESOURCE_EXHAUSTED.
+
+  Buffer space specified in COIProcessCreate*
+    Previously, specifying a buffer size in COIProcessCreate* would
+    set that number of bytes as the maximum number of bytes that the
+    process could use for buffers at any given time. Now,
+    Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI) will
+    still pre-allocate that number of bytes on the device during
+    process creation. However, if a user creates and uses more than
+    that amount in COIBuffers for that process, Intel(R) Coprocessor
+    Offload Infrastructure (Intel(R) COI) will allocate the
+    extra buffer space automatically, on-demand. This allows users to
+    pay for some of the cost of buffer allocation up-front, during
+    process creation, but still leaving them with the option to grow
+    beyond the originally specified size. On the other hand, it also
+    forces users to use a different mechanism to enforce COIBuffer
+    quotas, should they need them. Please see the COIProcessCreate*
+    APIs for more details.
+
+  Device termination signals reported directly
+    The COIProcessDestroy API has been modified such that the old
+    COI_SHUTDOWN_REASON enum has been removed. Instead, if the remote
+    process terminated abnormally, the termination signal reported by
+    the operating system is returned. Please see the COIProcessDestroy
+    API for more details.
+
+  Asynchronous DMA operations
+    The COIBufferRead/COIBufferWrite/COIBufferCopy APIs will now
+    perform asynchronous operations when requested. Previously the
+    implementation was limited to synchronous operation even when
+    invoked with input dependencies or output completion events.
+    In addition, the APIs also support a fast-path operation which
+    is invoked by using the COI_EVENT_ASYNC flag for the
+    completion event. When this is used with no input dependencies
+    Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI) will
+    queue the DMA operation as quickly as possible and
+    then return without tracking any internal state.
+    Users can take advantage of the fact that DMA operations execute
+    in the order they are queued to call many COI_EVENT_ASYNC
+    operations before calling one final operation for which there is
+    an output COIEVENT to keep track of.
+    Known Issue: A COIBufferCopy that involves copying between buffers
+    that are valid only on the sink is always synchronous even if the
+    COI_EVENT_ASYNC flag is turned on. This is because right now
+    internally there is no mechanism to make SCIF DMA operations
+    dependent on each other.
+
+  COIBufferCreateFromMemory using sink memory
+    The COIBufferCreateFromMemory API has now been extended so that
+    a user may pass in a virtual address for memory allocated on
+    a sink process. This makes it possible for memory that has
+    already been allocated on the sink to be turned into a COIBuffer
+    so that it can then be used in COIBuffer APIs and also in
+    run functions. Intel(R) Coprocessor Offload Infrastructure
+    (Intel(R) COI) will not deallocate the memory at any time
+    and will simply DMA in and out as directed by the user.
+    Please see the COIBufferCreateFromMemory API and the new
+    COI_SINK_MEMORY flag.
+
+  SINK_LD_PRELOAD
+    If set to a non empty value, this environment variable requests
+    that the specified colon separated libraries on the source file
+    system be used as LD_PRELOAD libraries when creating a process
+    on the sink. The specified libraries must exist on the source
+    file system. If any libraries specified in SINK_LD_PRELOAD cannot
+    be found or are not valid then the COIProcessCreate APIs will
+    return an error. Note that this error-handling behavior is
+    slightly different than LD_PRELOAD on most Linux distributions.
+
+  SINK_LD_TRACE_LOADED_OBJECTS
+    If set to a non empty value, this environment variable changes
+    the behavior of the COIProcessCreate* APIs. Instead of creating
+    the process the coi_daemon will print information about which
+    libraries it is loading to standard out. If all the dynamic
+    dependencies are found the API returns COI_NOT_INITIALIZED;
+    the COIProcess will not actually be created when this
+    environment variable is set, it is meant solely as a
+    debugging aid.
+
+  Dynamic buffer allocation from COIProcessCreate
+    It is now possible to pass 0 in for the reserved memory size in
+    the COIProcessCreate APIs. Doing so will not pre-allocate any
+    memory for COIBuffers on the sink, instead the buffer memory
+    will be allocated on demand. This can improve process startup
+    times and allow for more fine grained memory allocation since
+    a fixed pool is not allocated. The downside is the allocation
+    time could now occur during workload execution which may slow
+    certain workloads down.
+
+  Bootstrap processor avoidance
+    COIProcesses are now affinitized such that they skip the boot
+    strap processor. This is done since infrastructure threads for
+    Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI)
+    and the MPSS driver are affinitized to run on the bootstrap
+    processor. To override this behavior use the Linux affinity
+    APIs to add back the missing threads.
+
+  Logging information from coi_daemon
+    Output from coi_daemon and all sink processes that are not proxied
+    is now directed to /dev/null by default. This can be changed by
+    specifying the new -- option from the command line.
+    Furthermore, if the daemon is compiled with ENABLE_LOGGING, one
+    can also specify a --log option to direct diagnostic information
+    to stdout or --log=file to direct it to some file. Finally,
+    SIGUSR1 causes the daemon to emit state information to the log
+    or a standard output stream.
+
+  Reverse acceleration not yet supported
+    This release only supports forward acceleration where the host
+    offloads work to the Intel(R) MIC Architecture device. In a future
+    release it may be possible to offload work from the Intel(R) MIC
+    Architecture device back to the host.
+
+
+  Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI) Tutorials
+
+    The following tutorials are included to help new Intel(R) Coprocessor
+    Offload Infrastructure (Intel(R) COI)  application developers get
+    started with Intel(R) Coprocessor Offload Infrastructure (Intel(R) COI).
+    These can be found in /usr/share/doc/intel-coi-<version>/tutorials
+
+    hello_world
+        This tutorial shows how to launch a remote process which doesn't
+        do any additional Intel(R) Coprocessor Offload Infrastructure
+        (Intel(R) COI) processing. This can be useful to launch
+        a remote application on the Intel(R) MIC Architecture device.
+
+    coi_simple
+        A small tutorials which demonstrates how to use run functions
+        to invoke work on the sink and using miscellaneous data and
+        the result pointer to exchange data.
+
+    buffers_with_pipeline_function
+        This tutorial shows a simple usage of run functions using
+        buffers to transfer data between the source and sink.
+
+    buffer_with_user_memory
+        This tutorial shows how a user can manually manage their own
+        memory for buffer space by using Intel(R) Coprocessor Offload
+        Infrastructure (Intel(R) COI) APIs to create buffers from
+        pre-existing memory and also using the Intel(R) Coprocessor Offload
+        Infrastructure (Intel(R) COI) DMA APIs to transfer data manually
+        instead of relying on the Intel(R) Coprocessor Offload Infrastructure
+        (Intel(R) COI) runtime.
+
+    multiple_pipeline_explicit
+        Demonstrates how to use explicitly declared dependencies to
+        control program flow between two COIPipelines.
+
+    multiple_pipeline_implicit
+        Demonstrates how implicit dependencies are tracked by Intel(R)
+        Coprocessor Offload Infrastructure (Intel(R) COI)
+        when sharing buffers across Intel(R) Coprocessor Offload
+        Infrastructure (Intel(R) COI) pipelines.
+
+    user_event
+        This tutorial shows how user events can be used to synchronize
+        execution between the source and sink.
+
+    buffer_references
+        Demonstrates how to use COIBufferAddRef and COIBufferReleaseRef
+        to maintain ownership of a buffer using the buffer reference
+        counts.
+
+III. System Requirements
+
+  Minimum Hardware Requirements
+
+    1 GB of RAM
+    2 GB of disk space
+    Intel(R) Core(TM) i7 processor Software Development Platform
+    Intel(R) Xeon Phi(TM) coprocessor card
+
+  Supported Operating Systems
+
+    RHEL 6.7
+    RHEL 6.8
+    RHEL 7.1
+    RHEL 7.2
+    RHEL 7.3
+    SLES 11 SP4
+    SLES 12
+    SLES 12 SP1
+    SLES 12 SP2
+    Windows 8.1
+    Windows 10
+    Windows Server 2012
+    Windows Server 2012 R2
+
+  Software Requirements (Documentation)
+
+    The documentation in this release comes in multiple forms:
+        * Documentation is available in PDF form, which requires
+          Adobe* Acrobat*, ghostscript, Evince (GNOME), Okular (KDE),
+          or other PDF reader to view.
+
+IV. Known Issues in This Release
+
+  Allocating 2MB page buffers is slow
+    Due to the way Linux supports 2MB page allocation the time to
+    create a COIBuffer using 2MB pages can be slower than expected.
+    These buffers should be allocated during an initialization step
+    so that the allocation time does not impact the execution time
+    of the workload.
+
+V. Additional Information
+
+  For information related to building Intel(R) Coprocessor Offload
+  Infrastructure (Intel(R) COI) programs, see the Intel(R) Coprocessor
+  Offload Infrastructure (Intel(R) COI) Getting Started Guide:
+
+    /usr/share/doc/intel-coi-<version>/coi_getting_started.pdf
+
+  For information related to the Intel(R) Coprocessor Offload Infrastructure
+  (Intel(R) COI) API and programming model, see the Intel(R) Coprocessor
+  Offload Infrastructure (Intel(R) COI) API Reference Manual:
+
+    /usr/share/doc/intel-coi-<version>/MIC_COI_API_Reference_Manual_1_0.pdf
+VI. Customer Support
+
+  Please forward distribution requests, suggestions, questions or issues
+  via email to your customer contact or the MIC_AE mailing list using a
+  subject of:
+  COI SDK Release Feedback
+
+
+VII. Other Intel Products
+
+  You can find out about other Intel software development products by
+  visiting http://www.intel.com/software/products/
+
+
+
+VIII. Disclaimer and Legal Information
+
+INFORMATION IN THIS DOCUMENT IS PROVIDED IN CONNECTION WITH INTEL(R)
+PRODUCTS. NO LICENSE, EXPRESS OR IMPLIED, BY ESTOPPEL OR OTHERWISE, TO
+ANY INTELLECTUAL PROPERTY RIGHTS IS GRANTED BY THIS DOCUMENT. EXCEPT AS
+PROVIDED IN INTEL'S TERMS AND CONDITIONS OF SALE FOR SUCH PRODUCTS, INTEL
+ASSUMES NO LIABILITY WHATSOEVER, AND INTEL DISCLAIMS ANY EXPRESS OR
+IMPLIED WARRANTY, RELATING TO SALE AND/OR USE OF INTEL PRODUCTS INCLUDING
+LIABILITY OR WARRANTIES RELATING TO FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABILITY, OR INFRINGEMENT OF ANY PATENT, COPYRIGHT OR OTHER
+INTELLECTUAL PROPERTY RIGHT. Intel products are not intended for use in
+medical, life saving, life sustaining, critical control or safety
+systems, or in nuclear facility applications.
+
+Intel may make changes to specifications and product descriptions at any
+time, without notice.
+
+Designers must not rely on the absence or characteristics of any features
+or instructions marked "reserved" or "undefined." Intel reserves these
+for future definition and shall have no responsibility whatsoever for
+conflicts or incompatibilities arising from future changes to them.
+
+The software described in this document may contain software defects
+which may cause the product to deviate from published specifications.
+Current characterized software defects are available on request.
+
+This document as well as the software described in it is furnished under
+license and may only be used or copied in accordance with the terms of
+the license. The information in this manual is furnished for
+informational use only, is subject to change without notice, and should
+not be construed as a commitment by Intel Corporation. Intel Corporation
+assumes no responsibility or liability for any errors or inaccuracies
+that may appear in this document or any software that may
+be provided in association with this document.
+
+Except as permitted by such license, no part of this document may be
+reproduced, stored in a retrieval system, or transmitted in any form or
+by any means without the express written consent of Intel Corporation.
+
+Developers must not rely on the absence or characteristics of any
+features or instructions marked "reserved" or "undefined." Improper use
+of reserved or undefined features or instructions may cause unpredictable
+behavior or failure in developer's software code when running on an Intel
+processor. Intel reserves these features or instructions for future
+definition and shall have no responsibility whatsoever for conflicts or
+incompatibilities arising from their unauthorized use.
+
+BunnyPeople, Celeron, Celeron Inside, Centrino, Centrino logo, Chips,
+Core Inside, Dialogic, EtherExpress, ETOX, FlashFile, i386, i486, i960,
+iCOMP, InstantIP, Intel, Intel logo, Intel386, Intel486, Intel740,
+IntelDX2, IntelDX4, IntelSX2, Intel Core, Intel Inside, Intel Inside
+logo, Intel. Leap ahead., Intel. Leap ahead. logo, Intel NetBurst, Intel
+NetMerge, Intel NetStructure, Intel SingleDriver, Intel SpeedStep, Intel
+StrataFlash, Intel Viiv, Intel vPro, Intel XScale, IPLink, Itanium,
+Itanium Inside, MCS, MMX, MMX logo, Optimizer logo, OverDrive, Paragon,
+PDCharm, Pentium, Pentium II Xeon, Pentium III Xeon, Performance at Your
+Command, Pentium Inside, skoool, Sound Mark, The Computer Inside., The
+Journey Inside, VTune, Xeon, Xeon Inside, Intel Xeon Phi and Xircom are
+trademarks or registered trademarks of Intel Corporation or its subsidiaries
+in the United States and other countries.
+
+* Other names and brands may be claimed as the property of others.
+
+Copyright (c)  2005-2016, Intel Corporation. All Rights Reserved.
+

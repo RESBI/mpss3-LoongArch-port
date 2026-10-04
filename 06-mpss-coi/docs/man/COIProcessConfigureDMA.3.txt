@@ -1,0 +1,73 @@
+COIPROCESSCONFIGUREDMA(3)
+=========================
+:doctype: manpage
+
+*NAME*
+----
+COIProcessConfigureDMA - Set the number of logical channels
+and configuration for DMA usage for COIPROCESSes created.
+
+
+*SYNOPSIS*
+----------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessConfigureDMA(
+    const uint64_t 'in_Channels',
+    const COI_DMA_MODE 'in_Mode');*
+
+
+*DESCRIPTION*
+-----------
+
+Set the number and mode of the physical DMA channels that each COIProcess
+will establish during COIProcess creation.
+
+By default the runtime will operate in COI_DMA_MODE_SINGLE mode.
+This API is intended to be called before COIProcessCreateFromFile() or
+COIProcessCreateFromMemory(). The values are stored globally and will
+be used by the creation API's. It is possible to call this API once
+before each new COIPROCESS is created and thus have each COIPROCESS
+run in different modes. It is not possible to change the mode on an
+existing COIPROCESS.
+
+The larger number of logical connections requested will impose a
+performance penalty on the COIBUFFER creation API's, but unlock better
+parallelism for DMA transfers during runtime.
+
+A maximum value of four (4) channels is available today, but current
+implementation will only take advantage of two DMA channels. The option
+is left available for programmers to use in case future implementations
+provide performance advantages.
+
+It is important to note that for some operations that enabling these
+options may increase parallelism and require the user to enforce
+explicit dependencies for operations on the same buffers. See documentation
+for COIBufferRead/Write/Copy operations for more details.
+
+
+_in_Mode_::
+        [in] The mode of operation in which the runtime will use the
+        logical connections to the remote COIProcess.
+
+_in_Channels_::
+        [in] Number of logical connections to the remote COIProcess that
+        the runtime will establish and use for DMA transfer requests.
+        Will be ignored if in_Mode is set to COI_DMA_MODE_SINGLE.
+
+
+*RETURN VALUE*
+------------
+
+Upon successful completion, *COIProcessConfigureDMA*() call returns
+*COI_SUCCESS* otherwise:
+
+*COI_NOT_SUPPORTED* if an invalid value for in_Channels or in_Mode was requested.
+
+*COI_ARGUMENT_MISMATCH* if an invalid combination of in_Channels and in_Mode was requested. Example could be 2 channels with COI_DMA_MODE_SINGLE, or 1 channel with COI_DMA_MODE_READ_WRITE.
+
+
+NOTE
+----
+For a complete up to date list of valid *COI_DMA_MODE* values, please see the COIProcess_source.h header file. The default is *COI_DMA_MODE_SINGLE*, other options include *COI_DMA_MODE_READ_WRITE*, and *COI_DMA_MODE_ROUND_ROBIN*.
+

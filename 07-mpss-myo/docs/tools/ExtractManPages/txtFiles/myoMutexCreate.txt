@@ -1,0 +1,30 @@
+myoMutexCreate(3)
+=================
+:doctype: manpage
+
+NAME
+----
+myoMutexCreate - Create a mutex and return the mutex handle.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoMutexCreate(MyoMutex *out_pMutex)*
+
+DESCRIPTION
+-----------
+ parameter: out_pMutex Used to store the handle of the created mutex.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

@@ -1,0 +1,37 @@
+COIPROCESSPROXYFLUSH(3)
+=======================
+:doctype: manpage
+
+NAME
+----
+COIProcessProxyFlush - Block until all stdout and stderr output
+                        has been proxied to and written by the source.
+
+SYNOPSIS
+--------
+*#include <COIProcess_sink.h>*
+
+COIRESULT COIProcessProxyFlush(void);
+
+DESCRIPTION
+-----------
+The *COIProcessProxyFlush*() call will block until all stdout and stderr output
+has been proxied to and written by the source. This call guarantees that any output
+in a run function is transmitted to the source before the run function signals
+its completion event back to the source.
+
+Note that having an additional thread printing forever while another calls COIProxyFlush
+may lead to a hang because the process will be forced to wait until all that output can
+be flushed to the source before returning from this call.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIProcessProxyFlush*() call returns COI_SUCCESS
+once the proxy output has been flushed to and written written by the host.
+Note that Intel® Coprocessor Offload Infrastructure (Intel® COI)
+on the source writes to stdout and stderr, but does not flush this output.
+
+
+
+

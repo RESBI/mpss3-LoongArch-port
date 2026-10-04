@@ -1,0 +1,41 @@
+COIUNREGISTERNOTIFICATIONCALLBACK(3)
+====================================
+:doctype: manpage
+
+NAME
+----
+COIUnregisterNotificationCallback - Unregister a callback.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIUnregisterNotificationCallback(COIPROCESS 'in_Process', COI_NOTIFICATION_CALLBACK
+'in_Callback');*
+
+DESCRIPTION
+-----------
+
+The *COIUnregisterNotificationCallback*() call unregisters a callback,
+notifications will no longer be signaled.
+
+RETURN VALUE
+------------
+
+Upon successful return, the *COIUnregisterNotificationCallback*() call returns
+COI_SUCCESS indicating that the callback was unregistered successfully
+otherwise;
+
+COI_INVALID_HANDLE if the in_Process parameter does not identify a valid
+process.
+
+COI_INVALID_POINTER if the in_Callback parameter is NULL.
+
+COI_DOES_NOT_EXIST if in_Callback was not previously registered
+for in_Process.
+
+
+
+
+

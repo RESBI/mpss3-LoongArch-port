@@ -1,0 +1,42 @@
+myoiTargetFptrTableRegister(3)
+==============================
+:doctype: manpage
+
+NAME
+----
+myoiTargetFptrTableRegister - Register shared functions on target side. This function is the
+same as myoiHostFptrTableRegister, except it does not need to allocate
+thunks from non-coherent shared memory for each function entry, but
+instead looks up this information from a table retrieved from the
+Host side.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiTargetFptrTableRegister(void *in_pAddrOfFptrTable,
+int in_NumEntry, int in_Ordered)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddrOfFptrTable start address of the shared function
+table, assuming it follows the format of MyoiTargetSharedFptrEntry.
+
+
+ parameter: in_NumEntry number of entry in the table.
+
+
+ parameter: in_Ordered whether the table is ordered by function name.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

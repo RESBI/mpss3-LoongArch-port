@@ -1,0 +1,43 @@
+myoiHostFptrTableRegister(3)
+============================
+:doctype: manpage
+
+NAME
+----
+myoiHostFptrTableRegister - Register shared functions on host side. A 16 byte thunk will be
+allocated for each function entry in non-coherent shared memory. The
+thunk will contain a jump instruction to the local version of the
+shared function, which is provided by the second item of the function
+entry. Also, the address of the thunk will be stored to the 3rd item
+of the function entry for Compiler usage.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiHostFptrTableRegister(void *in_pAddrOfFptrTable,
+int in_NumEntry, int in_Ordered)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddrOfFptrTable start address of the shared function
+table, assuming it follows the format of MyoiHostSharedFptrEntry.
+
+
+ parameter: in_NumEntry number of entry in the table.
+
+
+ parameter: in_Ordered whether the table is ordered by function name.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

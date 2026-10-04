@@ -1,0 +1,170 @@
+# Copyright 2010-2017 Intel Corporation.
+#
+# This library is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, version 2.1.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# Disclaimer: The codes contained in these modules may be specific
+# to the Intel Software Development Platform codenamed Knights Ferry,
+# and the Intel product codenamed Knights Corner, and are not backward
+# compatible with other Intel products. Additionally, Intel will NOT
+# support the codes or instruction set in future products.
+#
+# Intel offers no warranty of any kind regarding the code. This code is
+# licensed on an "AS IS" basis and Intel is not obligated to provide
+# any support, assistance, installation, training, or other services
+# of any kind. Intel is also not obligated to provide any updates,
+# enhancements or extensions. Intel specifically disclaims any warranty
+# of merchantability, non-infringement, fitness for any particular
+# purpose, and any other warranty.
+#
+# Further, Intel disclaims all liability of any kind, including but
+# not limited to liability for infringement of any proprietary rights,
+# relating to the use of the code, even if Intel is notified of the
+# possibility of such liability. Except as expressly stated in an Intel
+# license agreement provided with this code and agreed upon with Intel,
+# no license, express or implied, by estoppel or otherwise, to any
+# intellectual property rights is granted herein.
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+                 MYO Open Source Distribution User's Guide
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+Thank you for your interest in the Intel(R) Xeon Phi(TM) product, and the MYO 
+Open Source Distribution.  MYO stands for Mine, Yours, Ours and is a library and
+Application Programming Interface to support virtual shared memory between 
+processes on a host process and Intel(R) Xeon Phi(TM) coprocessor cards.  This 
+package is supplementary to other Intel(R) Xeon Phi(TM) hardware and software, 
+and is intended for researchers and advanced users.  
+
+Notes: 
+   o Before MYO source is used, Intel(R) MPSS SDK and the Intel Composer XE 
+     Compatibility RPM should be installed. 
+     In addition to drivers and tools, these packages contain:
+	- Binary copies of the MYO libraries.
+	- Header files for building application programs that use MYO. 
+
+   o In this document, lines preceded by "user_prompt>" are used to represent a 
+     Linux* shell prompt; text following this string on the same line represents
+     commands to be executed in a Linux* shell.
+
+   o In this documentation, Intel(R) Xeon Phi(TM) architecture is sometimes 
+     referred to as MIC, which is an acronym for Many Integrated Core.  This 
+     acronym is handy when used in file and directory names.
+
+*Other names and brands may be claimed as the property of others.
+
+1) System requirements
+
+   o Supported hardware platform with at least one Intel(R) Xeon Phi(TM) 
+     coprocessor installed.
+   o Approved Linux* host operating system. Supported versions:  
+	- Red Hat* Enterprise Linux* 64-bit 6.0 kernel 2.6.32-71
+	- Red Hat* Enterprise Linux* 64-bit 6.1 kernel 2.6.32-131
+	- Red Hat* Enterprise Linux* 64-bit 6.2 kernel 2.6.32-220
+	- Red Hat* Enterprise Linux* 64-bit 6.3 kernel 2.6.32-279
+	- SUSE* Linux* Enterprise Server SLES 11 SP1 kernel 2.6.32.12-0.7-default
+	- SUSE* Linux* Enterprise Server SLES 11 SP2 kernel 3.0.13-0.27-default	   
+   o Intel(R) Xeon Phi(TM) Linux* Driver Package (including Intel(R) Xeon Phi(TM)
+     MYO Library Binaries).
+   o gcc compiler with Intel(R) Xeon Phi(TM) coprocessor support (installed with
+     Intel(R) Xeon Phi(TM) Driver Package).
+   o Intel(R) Composer XE 2013.
+
+2) Extract MYO Open Source Distribution
+
+   MYO source is delivered in the file myo-[version number].tar.bz2. 
+   
+   In the tar file, files are a tree relative to the myo-[version number] 
+   directory.  Extract the archive to the desired directory with the following 
+   steps.
+  
+      user_prompt> cd [directory of choice]
+      user_prompt> tar -xf myo-[version number].tar.bz2
+      user_prompt> cd myo-[version number]
+ 
+3) Verify extraction
+  
+   After MYO is extracted, the myo directory tree will be similar to the 
+   following:
+  
+   myo-[version number]
+   |-- include         Contains header files used in the build of applications 
+   |                   and tutorials.
+   |-- src             Contains source files of MYO runtime library.
+   |-- src/include     Contains header files used in the build of the library.
+   |-- tools           Contains the environment setting configuration files.
+   |-- docs            Contains myo reference documents.
+   `-- docs/tutorials  Contains tutorials that demonstrate how to program with 
+                       MYO.
+  
+   Drilling down further into the src directories, a map of where features are 
+   implemented is as follows:
+  
+   |-- allocator       Contains the memory management module (Memory allocator).
+   |-- communication   Contains the implementation of the communication.
+   |-- consistent      Contains the implementation of VSM protocol.
+   |-- include         Contains all internal header files.
+   |-- machinedep      Contains the platform dependent portion of MYO.
+   |-- misc            Contains all other files.
+   |-- Makefile        Makefile for MYO libraries.
+   |-- pinnedmem       Contains the implementation of get pinned memory.
+   |-- rfunc           Contains the implementation of APIs related with remote 
+   |                   function call.
+   |-- svar            Contains the implementation of APIs related with shared 
+   |                   variables.
+   `-- sync            Contains global (cross-bus) sync operations (mutex, 
+                       barrier and semaphore).
+
+4) Build the Myo and Myo DBL Libraries
+
+   You may build the myo and myo dbl libraries from the myo-[version number]/src 
+   directory** using the file myo-[version number]/src/Makefile with gnu make.
+   
+      [From myo-[version number]/src directory**]
+      user_prompt> make TARGET_ICC='icc -mmic'
+   
+   This will create a myo-[version number]/bin directory** and the following 
+   dynamic libraries:
+   
+	libmyo-client.so.0     libmyodbl-service.so.0
+	libmyodbl-client.so.0  libmyo-service.so.0
+
+   To remove the files created during the build, enter the command:
+   
+      user_prompt> make clean 
+   
+5) Tutorials
+
+   A great way to test changes to the MYO libraries is to run them with the 
+   tutorials that are located in myo-[version number]/docs/tutorials. 
+   myo-[version number]/docs/tutorials/README describes the details of building 
+   and running the tutorials, and we attempt not to duplicate the same 
+   information in this file.  However, there are a few extra steps you will take 
+   because you are building the myo library before you begin working with the 
+   tutorials.
+   
+   By default, the tutorials run with the MYO libraries that are installed with 
+   the driver.  When each tutorial is run, it will copy the MYO libraries from 
+   their installed location.  By copying the libraries each time, the tutorials 
+   insure that the latest library is used.  In addition, because the card is 
+   often configured to run from a RAM disk, when the library is copied to the 
+   card as the tutorials are run, it insures that there has been a library 
+   loaded since the last power cycle of the card.
+
+   To insure your libraries are used, you must replace the myo libraries that 
+   were installed with Intel(R) MPSS with the libraries that you built.
+   
+6) Additional documentation
+
+   You can get additional documentation about the myo API and its source code 
+   from the myo-[version number]/docs directory.  This source archive also 
+   generates man files that can be revised and viewed as part of your changes to 
+   the MYO libraries.

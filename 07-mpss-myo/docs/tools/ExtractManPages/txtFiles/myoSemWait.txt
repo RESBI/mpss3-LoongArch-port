@@ -1,0 +1,33 @@
+myoSemWait(3)
+=============
+:doctype: manpage
+
+NAME
+----
+myoSemWait - Decrements (locks) the semaphore. If the semaphore value is
+greater than zero, then the decrement proceeds and the function
+returns immediately, or else the call blocks until the semaphore
+value rises above zero.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoSemWait(MyoSem in_Sem)*
+
+DESCRIPTION
+-----------
+ parameter: in_Sem the semaphore handle returned by myoSemCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

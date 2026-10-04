@@ -1,0 +1,35 @@
+COIBUFFERDESTROY(3)
+===================
+:doctype: manpage
+
+NAME
+----
+COIBufferDestroy - Destroys a buffer.
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferDestroy(COIBUFFER 'in_Buffer')*
+
+
+DESCRIPTION
+-----------
+The *COIBufferDestroy*() call destroys a buffer. This call Will block on completion
+of any operations on the buffer, such as COIPipelineRunFunction or COIBufferCopy.
+Will block until all COIBufferAddRef calls have had a matching COIBufferReleaseRef call
+made. Will not block on an outstanding COIBufferUnmap but will instead
+return COI_RETRY.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIBufferDestroy*() returns COI_SUCCESS indicating that
+the buffer was destroyed otherwise; COI_INVALID_HANDLE if the buffer handle was invalid,
+COI_RETRY if the buffer is currently mapped. The buffer must first be unmapped before it
+can be destroyed, COI_RETRY if the sub-buffers created from this buffer are not yet
+destroyed.
+
+

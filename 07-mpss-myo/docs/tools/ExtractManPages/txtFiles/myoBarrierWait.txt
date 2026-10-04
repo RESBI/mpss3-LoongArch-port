@@ -1,0 +1,31 @@
+myoBarrierWait(3)
+=================
+:doctype: manpage
+
+NAME
+----
+myoBarrierWait - The caller will block until the required number of threads
+have called myoBarrierWait with the same barrier handle.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoBarrierWait(MyoBarrier in_Barrier)*
+
+DESCRIPTION
+-----------
+ parameter: in_Barrier the barrier handle returned by myoBarrierCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

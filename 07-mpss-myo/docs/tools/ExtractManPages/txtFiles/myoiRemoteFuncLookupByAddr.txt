@@ -1,0 +1,36 @@
+myoiRemoteFuncLookupByAddr(3)
+=============================
+:doctype: manpage
+
+NAME
+----
+myoiRemoteFuncLookupByAddr - Get the name of a remote function by looking up the table by
+the address. This API can be used when calling a remotely callable
+function by a function pointer.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiRemoteFuncLookupByAddr(MyoiRemoteFuncType
+in_pWrapFuncAddr,char **out_pFuncName)*
+
+DESCRIPTION
+-----------
+ parameter: in_pWrapFuncAddr address of the function.
+
+
+ parameter: out_pFuncName name of the function.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

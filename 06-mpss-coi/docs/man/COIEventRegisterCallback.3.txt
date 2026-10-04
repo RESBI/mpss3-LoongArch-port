@@ -1,0 +1,78 @@
+COIEVENTREGISTERCALLBACK(3)
+=========================
+:doctype: manpage
+
+*NAME*
+----
+COIEventRegisterCallback - Registers any COIEVENT to receive a one time
+callback when completed.
+
+
+*SYNOPSIS*
+----------
+*#include <COIEvent_source.h>*
+
+*COIRESULT COIEventRegisterCallback(
+    const COIEVENT              'in_Event',
+          COI_EVENT_CALLBACK    'Callback',
+    const voidpass:[*]          'in_UserData',
+    const uint64_t              'in_Flags');*
+
+
+*DESCRIPTION*
+-----------
+Registers any COIEVENT to receive a one time callback, when the event
+is marked complete in the offload runtime. If the event has completed
+before the COIEventRegisterCallback() is called then the callback will
+immediately be invoked by the calling thread. When the event is
+registered before the event completes, the runtime gaurantees that
+the callback will be invoked before COIEventWait() is notified of
+the same event completing. In well written user code, this may provide
+a slight performance advantage.
+
+Users should treat the callback much like an interrupt routine, in regards
+of performance. Specifically designing the callback to be as short and
+non blocking as possible. Since the thread that runs the callback is
+non deterministic blocking or stalling of the callback, may have severe
+performance impacts on the offload runtime. Thus, it is important to not
+create deadlocks between the callback and other signaling/waiting
+mechanisms. It is recommended to never invoke COIEventWait() inside
+a callback function, as this could lead to immediate deadlocks.
+
+It is important to note that the runtime cannot distinguish between
+already triggered events and invalid events. Thus the user needs to pass
+in a valid event, or the callback will be invoked immediately.
+Failed events will still receive a callback and the user can query
+COIEventWait() after the callback for the failed return code.
+
+If more than one callback is registered for the same event, only the
+single most current callback will be used, i.e. the older one will
+be replaced.
+
+_in_Event_::
+        [in] A valid single event handle to be registered to receive a
+callback.
+
+_in_Callback_::
+        [in] Pointer to a user function used to signal a event completion.
+
+_in_UserData_::
+        [in] Opaque data to pass to the callback when it is invoked.
+
+_in_Flags_::
+        [in] Reserved parameter for future expansion, required to be zero for
+now.
+
+
+*RETURN VALUE*
+------------
+
+Upon successful registration, *COIEventRegisterCallback*() call returns
+*COI_SUCCESS* otherwise:
+
+*COI_INVALID_HANDLE* if in_Event is not a valid COIEVENT
+
+*COI_INVALID_HANDLE* if in_Callback is not a valid pointer.
+
+*COI_ARGUMENT_MISMATCH* if the in_Flags is not zero.
+

@@ -1,0 +1,30 @@
+myoMutexDestroy(3)
+==================
+:doctype: manpage
+
+NAME
+----
+myoMutexDestroy - Destroy the mutex.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoMutexDestroy(MyoMutex in_Mutex)*
+
+DESCRIPTION
+-----------
+ parameter: in_Mutex the mutex handle returned by myoMutexCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

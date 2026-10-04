@@ -1,0 +1,76 @@
+myoiLibInit(3)
+==============
+:doctype: manpage
+
+NAME
+----
+myoiLibInit - Init entry of the MYO library responsible for initializing
+the runtime.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*MyoError myoiLibInit(void * in_args, void (*userInitFunc))*
+
+DESCRIPTION
+-----------
+ parameter: in_args mechanism to pass arguments to the Initialization
+routine. The default value of NULL would mean the host is blocked
+on the completion of myoiLibInit() on all nodes. A subset of the
+installed cards can be intialized by passing an array of
+MyoiUserParams. For example, in a system with two cards, to run a
+MYO application only on the second card, intialize the array as
+follows:
+MyoiUserParams UserParas[64];
+UserParas[0].type = MYOI_USERPARAMS_DEVID;
+UserParas[0].nodeid = 2;
+UserParas[1].type = MYOI_USERPARAMS_LAST_MSG;
+if(MYO_SUCCESS != myoiLibInit(&UserParas, (void*)&myoiUserInit)) {
+printf("Failed to initialize MYO runtime\n");
+return -1;
+}
+This intialization is required only in the client/host side
+of the application. The server/card side executable should be
+executed only on the second card in this case.
+
+Another capability for the MyoiUserParams structure in MYO is specifying
+a remote procedure call to be executed on the host or card, immediately after
+myoiLibInit() completes. This capability is useful because some calls in
+MYO return immediately, but do not actually complete until after the MYO
+library is completely initialized on all peers.  An example follows,
+showing how to cause MYO to execute the registered function named
+"PostMyoLibInitFunction" on the first card only:
+MyoiUserParams UserParas[64];
+UserParas[0].type = MYOI_USERPARAMS_POST_MYO_LIB_INIT_FUNC;
+UserParas[0].nodeid = 1;
+SetPostLibInitFuncName(UserParas[1], "PostMyoLibInitFunction");
+UserParas[2].type = MYOI_USERPARAMS_LAST_MSG;
+if(MYO_SUCCESS != myoiLibInit(&UserParas, (void*)&myoiUserInit)) {
+printf("Failed to initialize MYO runtime\n");
+return -1;
+}
+
+Note, to cause PostMyoLibInitFunction to be executed on ALL cards,
+specify: MYOI_USERPARAMS_POST_MYO_LIB_INIT_FUNC_ALL_NODES for the nodeid.
+That is:
+UserParas[0].nodeid = MYOI_USERPARAMS_POST_MYO_LIB_INIT_FUNC_ALL_NODES;
+
+
+
+ parameter: userInitFunc Shared variables and remote functions are
+registered in this routine, which is called by the runtime during
+library initialization.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS;
+MYO_ERROR;
+
+

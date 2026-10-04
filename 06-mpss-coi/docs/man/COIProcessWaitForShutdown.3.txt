@@ -1,0 +1,34 @@
+COIPROCESSWAITFORSHUTDOWN(3)
+============================
+:doctype: manpage
+
+NAME
+----
+COIProcessWaitForShutdown - This call will block while waiting for the source to send a process destroy
+		            message.
+
+SYNOPSIS
+--------
+*#include <COIProcess_sink.h>*
+
+COIRESULT COIProcessWaitForShutdown(void);
+
+DESCRIPTION
+-----------
+The *COIProcessWaitForShutdown*() call will block while waiting for the
+source to send a process destroy message. This provides the sink side application
+with an event to keep the main() function from exiting until it is directed to by
+the source. When the shutdown message is received this function will stop any future run
+functions from executing but will wait for any current run functions to complete.
+All Intel® Coprocessor Offload Infrastructure (Intel® COI) resources will be
+cleaned up and no additional Intel® Coprocessor Offload Infrastructure (Intel® COAPIs
+should be called after this function returns.  This function does not invoke exit()
+so the application can perform any of its own cleanup once this call returns.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIProcessWaitForShutdown*() call returns COI_SUCCESS
+once the process receives the shutdown message.
+
+

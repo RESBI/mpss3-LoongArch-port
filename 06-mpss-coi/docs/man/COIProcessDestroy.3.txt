@@ -1,0 +1,46 @@
+COIPROCESSDESTROY(3)
+====================
+:doctype: manpage
+
+NAME
+----
+COIProcessDestroy - Destroys the indicated process, releasing its resources.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessDestroy(COIPROCESS 'in_Process', int32_t
+'in_WaitForMainTimeout', uint8_t 'in_ForceDestroy', int*
+\*'out_pProcessReturn'*, uint32_t* '\*out_pTermincationCode'*);*
+
+DESCRIPTION
+-----------
+
+The *COIProcessDestroy*() call destroys the indicated process, releasing its
+resources. Note, this will destroy any outstanding pipelines created in this process
+as well.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessDestroy*() call returns
+COI_SUCCESS indicating that process was successfully destroyed otherwise;
+
+COI_INVALID_HANDLE if the process handle passed in was invalid.
+
+COI_OUT_OF_RANGE for any negative in_WaitForMainTimeout value
+except -1.
+
+COI_ARGUMENT_MISMATCH if in_WaitForMainTimeout is -1 and
+in_ForceDestroy is true.
+
+COI_TIME_OUT_REACHED if the sink process is still running after
+waiting in_WaitForMainTimeout milliseconds and in_ForceDestroy
+is false. This is true even if in_WaitForMainTimeout was 0.
+In this case, out_pProcessReturn and out_pTerminationCode
+are undefined.
+
+

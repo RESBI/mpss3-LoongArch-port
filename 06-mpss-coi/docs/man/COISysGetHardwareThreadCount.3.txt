@@ -1,0 +1,30 @@
+COISYSGETHARDWARETHREADCOUNT(3)
+===============================
+:doctype: manpage
+
+NAME
+----
+COISysGetHardwareThreadCount - return the number of hardware threads exposed
+                               by the processor on which the caller is
+		               running.
+
+
+SYNOPSIS
+--------
+*#include <COISysInfo_common.h>*
+
+uint32_t COISysGetHardwareThreadCount(void);
+
+DESCRIPTION
+-----------
+The *COISysGetHardwareThreadCount*() call returns the number of hardware
+threads exposed by the processor on which the caller is running.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COISysGetHardwareThreadCount*() call returns the number of
+hardware threads exposed by the processor  on which the caller is running; otherwise
+returns 0 if there is an error loading the processor info.
+
+

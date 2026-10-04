@@ -1,0 +1,29 @@
+COISYSGETL2CACHECOUNT(3)
+========================
+:doctype: manpage
+
+NAME
+----
+COISysGetL2CacheCount - Returns the number of level 2 caches within the
+processor on which the caller is running.
+
+SYNOPSIS
+--------
+*#include <COISysInfo_common.h>*
+
+uint32_t COISysGetL2CacheCount(void);
+
+DESCRIPTION
+-----------
+The *COISysGetL2CacheCount*() call returns the number of level 2 caches within
+the processor on which the caller is running.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COISysGetL2CacheCount*() call returns the number of
+level 2 caches within the processor on which the caller is running; otherwise
+returns ((uint32_t)-1) if there was an error loading processor info.
+
+
+

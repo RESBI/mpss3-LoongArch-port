@@ -1,0 +1,122 @@
+# Copyright 2010-2017 Intel Corporation.
+#
+# This library is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, version 2.1.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# Disclaimer: The codes contained in these modules may be specific
+# to the Intel Software Development Platform codenamed Knights Ferry,
+# and the Intel product codenamed Knights Corner, and are not backward
+# compatible with other Intel products. Additionally, Intel will NOT
+# support the codes or instruction set in future products.
+#
+# Intel offers no warranty of any kind regarding the code. This code is
+# licensed on an "AS IS" basis and Intel is not obligated to provide
+# any support, assistance, installation, training, or other services
+# of any kind. Intel is also not obligated to provide any updates,
+# enhancements or extensions. Intel specifically disclaims any warranty
+# of merchantability, non-infringement, fitness for any particular
+# purpose, and any other warranty.
+#
+# Further, Intel disclaims all liability of any kind, including but
+# not limited to liability for infringement of any proprietary rights,
+# relating to the use of the code, even if Intel is notified of the
+# possibility of such liability. Except as expressly stated in an Intel
+# license agreement provided with this code and agreed upon with Intel,
+# no license, express or implied, by estoppel or otherwise, to any
+# intellectual property rights is granted herein.
+
+#Directory and file============================
+
+#KNCCOMPILER          = /usr/linux-k1om-4.7/linux-k1om
+KNCCOMPILER           = /opt/mpss/2.2/sysroots/k1om-mpss-linux
+#KNCPREFIX            = /usr/linux-k1om-4.7/bin/x86_64-k1om-linux-
+KNCPREFIX             = /opt/mpss/2.2/sysroots/x86_64-mpsssdk-linux/usr/bin/k1om-mpss-linux/k1om-mpss-linux-
+
+MYO_HOME = ../../
+DBL_HOME = .
+OUT_DIR = $(DBL_HOME)/bin
+INCL_DIRS = -I$(DBL_HOME) \
+			-I$(MYO_ROOT)/include\
+            -I/usr/include \
+
+DBL_C_SRCS = myo_dbl.c
+
+HAS_DEBUGGER = -DHAS_DEBUGGER
+
+DBL_SERVICE_C_OBJS = $(DBL_C_SRCS:.c=.service.o)
+DBL_CLIENT_C_OBJS = $(DBL_C_SRCS:.c=.client.o)
+
+# -------------------Host side --------------------- #
+HOST_CC         =       gcc
+HOST_CXX        =       g++
+HOST_LD         =       g++
+HOST_AR         =       ar
+
+HOST_OBJ_SUFF   =       o
+
+HOST_DEFS =
+
+HOST_CFLAGS     =       -O0 -g -std=c89
+HOST_CXXFLAGS   =       -O0 -g
+HOST_LDFLAGS    = 
+HOST_LD_OFLAG   =       -o
+
+# ------------------- Card side --------------------- #
+CARD_DEFS = -DMYOI_DMA_COMM  # Enable DMA for data transfer from XEON_PHI to CPU
+
+COMPILER_LIB = -L/opt/mpss/2.2/sysroots/k1om-mpss-linux/usr/lib64/  
+# old path was -L/usr/linux-k1om-4.7/linux-k1om/usr/lib64/ 
+
+CARD_CC         =       $(KNCPREFIX)gcc
+CARD_CXX        =       $(KNCPREFIX)gcc
+CARD_LD         =       $(KNCPREFIX)ld
+CARD_AR         =       $(KNCPREFIX)ar
+
+CARD_CFLAGS     =       -O0 -g	-std=c89
+CARD_CXXFLAGS   =       -O0 -g	
+CARD_LDFLAGS    =       $(COMPILER_LIB) -shared  -lpthread 
+
+CARD_CXXFLAGS+= -D_K1OM_
+
+LIB_INSTALL_DIR = /opt/mpss/2.2/sysroots/k1om-mpss-linux/usr/lib64/
+# Previously used: /opt/intel/mic/myo/lib
+
+.PHONY : all clean install build
+
+all : libmyodbl-service.so libmyodbl-client.so
+
+install : libmyodbl-service.so libmyodbl-client.so
+	sudo cp -dr --no-preserve=ownership libmyodbl-service.so libmyodbl-client.so $(LIB_INSTALL_DIR)
+
+build: libmyodbl-service.so libmyodbl-client.so
+
+#Objects
+$(DBL_SERVICE_C_OBJS): %.service.o: %.c
+	$(CARD_CC) $(CARD_CFLAGS) $(HAS_DEBUGGER) $(INCL_DIRS) -fPIC -c $^ -o $@
+$(DBL_CLIENT_C_OBJS): %.client.o: %.c
+	$(HOST_CC) $(HOST_CFLAGS) $(HAS_DEBUGGER) $(INCL_DIRS) -fPIC -c $^ -o $@
+
+# Rules for building 
+libmyodbl-service.so : $(DBL_SERVICE_C_OBJS)
+	$(CARD_CC) $(CARD_LDFLAGS) -shared $^ -o $@
+	mkdir -p $(OUT_DIR)
+	cp $@ $(OUT_DIR)
+
+libmyodbl-client.so: $(DBL_CLIENT_C_OBJS)
+	$(HOST_CXX) $(HOST_LDFLAGS) -shared $^ -o $@ -shared -Wl,--version-script linker_script.map
+	mkdir -p $(OUT_DIR)
+	cp $@ $(OUT_DIR)
+
+clean:
+	/bin/rm -f $(DBL_CLIENT_C_OBJS) $(DBL_SERVICE_C_OBJS) 
+	/bin/rm -f $(OUT_DIR)/libmyodbl-*.so libmyodbl-*.so
+
+ipcrm:
+	-ipcs -m|grep 0x|awk '{print "-M", $$1}'|xargs ipcrm
+	-ipcs -s|grep 0x|awk '{print "-S", $$1}'|xargs ipcrm

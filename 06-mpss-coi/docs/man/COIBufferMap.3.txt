@@ -1,0 +1,72 @@
+COIBUFFERMAP(3)
+===============
+:doctype: manpage
+
+NAME
+----
+COIBufferMap - Initiates a request to access a region of a buffer
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferMap(COIBUFFER 'in_Buffer', uint64_t 'in_Offset', uint64_t
+'in_Length', COI_MAP_TYPE 'in_Type', uint32_t 'in_NumDependencies',
+const COIEVENT* \*'in_pDependencies'*, COIEVENT* \*'out_pCompletion'*, \
+COIMAPINSTANCE* \*'out_pMapInstance'*, void* \**'out_ppData'*);*
+
+DESCRIPTION
+-----------
+The *COIBufferMap*() call initiates a request to access a region of a buffer. Multiple
+overlapping (or non overlapping) regions can be mapped simultaneously for
+any given buffer. If a completion event is specified this call will queue a request
+for the data which will be satisfied when the buffer is available. Once all
+conditions are met the completion event will be signaled and the user can access
+the data at out_ppData.
+
+The user can call COIEventWait with out_pCompletion to find out when the map operation has
+completed. If the user accesses the data before the map operation is complete the results
+are undefined. If out_pCompletion is NULL then this call blocks until the map operation
+completes and when this call returns out_ppData can be safely accessed. This call
+returns a map instance handle in an out parameter which must be passed into COIBufferUnmap
+when the user no longer needs access to that region of the buffer.
+
+The address returned from COIBufferMap may point to memory that Intel® Coprocessor Offload
+Infrastructure (Intel® COI) manages on behalf of the user. The user must not free or reallocate
+this memory, Intel® Coprocessor Offload Infrastructure (Intel® COI)
+will perform any necessary cleanup when the buffer is destroyed.
+
+Note that different types of buffers behave differently when mapped. For instance, mapping a
+COI_BUFFER_NORMAL for write must stall if the buffer is currently being written to by a
+run function. Mapping a COI_BUFFER_PINNED buffer will not affect other functions that use 
+that buffer since a COI_BUFFER_PINNED buffer can be mapped at any time. The asynchronous 
+operation of COIBufferMap will likely be most useful when paired with a COI_BUFFER_NORMAL.
+
+RETURN VALUE
+------------
+Upon successful completion, *COIBufferMap*() returns COI_SUCCESS indicating
+that map request is successful otherwise;
+
+COI_OUT_OF_RANGE if in_Offset of (in_Offset + in_Length) exceeds
+the size of the buffer.
+
+COI_OUT_OF_RANGE if in_Length is 0, but in_Offset is not 0.
+
+COI_OUT_OF_RANGE if in_Type is not a valid COI_MAP_TYPE.
+
+COI_ARGUMENT_MISMATCH if in_NumDependencies is non-zero while
+in_pDependencies was passed in as NULL.
+
+COI_ARGUMENT_MISMATCH if in_pDependencies is non-NULL but
+in_NumDependencies is zero.
+
+COI_ARGUMENT_MISMATCH if the in_Type of map is not a valid type
+for in_Buffer's type of buffer.
+
+COI_INVALID_HANDLE if in_Buffer is not a valid buffer handle.
+
+COI_INVALID_POINTER if out_pMapInstance or out_ppData is NULL.
+
+
+

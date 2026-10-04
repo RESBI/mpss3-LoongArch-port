@@ -1,0 +1,594 @@
+# Copyright 2010-2017 Intel Corporation.
+#
+# This library is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, version 2.1.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# Disclaimer: The codes contained in these modules may be specific
+# to the Intel Software Development Platform codenamed Knights Ferry,
+# and the Intel product codenamed Knights Corner, and are not backward
+# compatible with other Intel products. Additionally, Intel will NOT
+# support the codes or instruction set in future products.
+#
+# Intel offers no warranty of any kind regarding the code. This code is
+# licensed on an "AS IS" basis and Intel is not obligated to provide
+# any support, assistance, installation, training, or other services
+# of any kind. Intel is also not obligated to provide any updates,
+# enhancements or extensions. Intel specifically disclaims any warranty
+# of merchantability, non-infringement, fitness for any particular
+# purpose, and any other warranty.
+#
+# Further, Intel disclaims all liability of any kind, including but
+# not limited to liability for infringement of any proprietary rights,
+# relating to the use of the code, even if Intel is notified of the
+# possibility of such liability. Except as expressly stated in an Intel
+# license agreement provided with this code and agreed upon with Intel,
+# no license, express or implied, by estoppel or otherwise, to any
+# intellectual property rights is granted herein.
+
+ifeq (,$(wildcard ./.mpss-metadata))
+	MPSS_COMMIT	:= $(shell git rev-parse HEAD)
+	MPSS_VERSION := DevBox
+endif
+
+ifeq ($(proj_target),knllb)
+	MPSS_COMMIT	:= deadbeef
+	MPSS_VERSION := $(version)
+	HOST=1
+else ifeq ($(proj_target), knllb_card)
+	MPSS_COMMIT := deadbeef
+	MPSS_VERSION := $(version)
+	DEV=1
+else ifeq ($(proj_target), knlsb)
+	MPSS_COMMIT := deadbeef
+	MPSS_VERSION := $(version)
+	DEV=1
+else
+	include mpss-metadata.mk
+endif
+
+ifeq ($(DIR_BUILD),)
+	DIR_BUILD := build/
+endif
+
+ifeq ($(wildcard src/mpss-metadata.c),)
+	VERSIONING :=$(shell cp $(MPSS_METADATA_C) src/)
+endif
+
+INSTALL				= install
+INSTALL_d			= $(INSTALL) -d
+INSTALL_x			= $(INSTALL)
+INSTALL_f			= $(INSTALL) -m644
+SHELL				= /bin/sh
+prefix				= /usr/
+exec_prefix 		= $(prefix)
+bindir				= $(exec_prefix)bin
+sbindir				= $(exec_prefix)sbin
+libdir				= $(prefix)lib64
+includedir			= $(prefix)include
+docdir				= $(prefix)share/doc
+mandir				= $(prefix)share/man
+initdir				= /etc/init.d
+rc5dir				= /etc/rc5.d
+rc3dir				= /etc/rc3.d
+sdkdir				= /opt/mpss/x200/minsdk/
+sdklibdir			= /lib
+sdkincdir			= /include
+
+nthreads			:= $(shell echo `nproc`*2 | bc)
+
+COI_DOC				= /intel-coi-$(MPSS_VERSION)/
+
+KNCCOMPILER			:= `cd /opt/mpss/?.?*/sysroots/k1om-mpss-linux; pwd`
+KNCPREFIX			:= /opt/mpss/?.?*/sysroots/x86_64-mpsssdk-linux/usr/bin/k1om-mpss-linux/k1om-mpss-linux-
+
+AR					?= ar
+CC					?= gcc
+CXX					?= g++
+LIBTOOL				?= glibtool
+
+INCLUDE				:= -Isrc/include/
+V_MAP				:= -Wl,--version-script src/include/internal/coi_version_linker_script.map
+VV_MAP				:= -Wl,--version-script src/test/scenario_version/internal/coi_version_linker_script.map
+
+ASTYLE_DIR			= /opt/mpss_toolchains/astyle
+ASTYLE_VER			= 2.05.1
+ASTYLE_OPTIONS_FILE	= ./tools/astyle/astyle.rc
+ASTYLE_OPTIONS		= --options=$(ASTYLE_OPTIONS_FILE) -n --recursive ./src/*.h ./src/*.cpp
+
+PRE_COMMIT_HOOK     = .git/hooks/pre-commit
+FORMAT_SCRIPT       = tools/astyle/pre-commit.hook
+
+COI_LIB_VERSION		= 0
+CC_DEFINES			= -D"COI_LIB_VERSION=$(COI_LIB_VERSION)" -D"COI_DAEMON_ARCH=$(TARGET_MACHINE)" -g
+ifeq ($(filter -DDEBUG, $(CFLAGS)),)
+CC_DEFINES			+= -DNDEBUG
+endif
+BASE_CC_FLAGS		= $(CC_DEFINES) $(INCLUDE) $(CFLAGS) $(CPPFLAGS) $(MPSS_METADATA_CFLAGS) -Wall
+CC_FLAGS			= -fPIC -O3 $(BASE_CC_FLAGS) -pthread -fexceptions -fstack-protector -D_FORTIFY_SOURCE=2
+
+LD_FLAGS			= -pthread -ldl -lrt -Wl,-z,relro,-z,now $(LDFLAGS)
+
+MAKEDEPEND			= $(CC) $(BASE_CC_FLAGS) -MM -o $@.d $< -MQ $@
+
+COMMON_SRC1			= api/perf/perf_common.cpp \
+					  mechanism/message/message.cpp \
+					  mechanism/process/shared_library_checker.cpp \
+					  mechanism/process/process_sink_common.cpp \
+					  mechanism/process/shared_library_finder.cpp \
+					  mechanism/sysinfo/sysinfo.cpp \
+					  transport/coi_comm_factory.cpp \
+					  transport/coi_comm.cpp \
+					  transport/scif_comm.cpp \
+					  transport/ofi_comm.cpp 
+
+ifeq ($(proj_target),knlsb)
+COMMON_SRC1			+= security/coi_security.cpp
+endif
+
+COMMON_SRC			:= $(COMMON_SRC1:%=src/%)
+COMMON_OBJ			:= $(COMMON_SRC:src/%.cpp=$(DIR_BUILD)%.o)
+COMMON_OBJ			+= $(COMMON_SRC:src/%.c=$(DIR_BUILD)%.o)
+COMMON_LIB			:= libcoi_common.a
+
+MICNATIVELOADEX1	= tools/micnativeloadex/micnativeloadex.cpp \
+					  legal/elf_headers_license.cpp
+MICNATIVELOADEX_SRC	:= $(MICNATIVELOADEX1:%=src/%)
+MICNATIVELOADEX_OBJ	:= $(MICNATIVELOADEX_SRC:src/%.cpp=$(DIR_BUILD)%.o)
+MICNATIVELOADEX_BIN	:= micnativeloadex
+
+COITRACE1			= tools/coitrace/coitrace.cpp
+COITRACE_SRC		:= $(COITRACE1:%=src/%)
+COITRACE_OBJ		:= $(COITRACE_SRC:src/%.cpp=$(DIR_BUILD)%.o)
+ifeq ($(proj_target),knllb)
+METADATA_OBJ			:=
+METADATA_SRC			:=
+MPSS_BUILTON			:= Desk
+MICNATIVELOADEX_META	:= -DMPSS_VERSION=\"$(MPSS_VERSION)\" -DMPSS_BUILDNO=\"$(MPSS_BUILDNO)\" -DMPSS_VERSION=\"$(MPSS_VERSION)\" -DMPSS_BUILTON=\"$(MPSS_BUILTON)\"
+else ifeq ($(proj_target),knllb_card)
+METADATA_OBJ			:=
+METADATA_SRC			:=
+MPSS_BUILTON			:= Desk
+MICNATIVELOADEX_META	:= -DMPSS_VERSION=\"$(MPSS_VERSION)\" -DMPSS_BUILDNO=\"$(MPSS_BUILDNO)\" -DMPSS_VERSION=\"$(MPSS_VERSION)\" -DMPSS_BUILTON=\"$(MPSS_BUILTON)\"
+else ifeq ($(proj_target),knlsb)
+METADATA_OBJ			:=
+METADATA_SRC			:=
+MPSS_BUILTON			:= Desk
+MICNATIVELOADEX_META	:= -DMPSS_VERSION=\"$(MPSS_VERSION)\" -DMPSS_BUILDNO=\"$(MPSS_BUILDNO)\" -DMPSS_VERSION=\"$(MPSS_VERSION)\" -DMPSS_BUILTON=\"$(MPSS_BUILTON)\"
+else
+METADATA_OBJ		:= $(DIR_BUILD)mpss-metadata.o
+METADATA_SRC        := src/mpss-metadata.c
+endif
+COITRACE_BIN		:= coitrace
+
+COITRACELIB1		= tools/coitrace/coitracelib.cpp
+COITRACELIB_SRC		:= $(COITRACELIB1:%=src/%)
+COITRACELIB_OBJ		:= $(COITRACELIB_SRC:src/%.cpp=$(DIR_BUILD)%.o)
+COITRACELIB_LIB		:= libcoitracelib.so
+
+include coi_*.mk
+
+.PHONY: all release* debug* clean tools manuals coverage* format install-hooks
+
+IGNORE_DEP_TARGETS = clean release debug uninstall %-install coverage \
+	%-install-host %-install-sdk %-docs manuals format install-hooks
+
+#WHAT will resolve to plainly HOST or DEV to control source and
+#path statements. If overwridden by the command line it
+#simply stays at HOST or DEV and skips the assignment here
+TARGET_MACHINE := $(shell $(CC) -dumpmachine | sed -e 's/-.*//')
+WHAT_k1om := DEV
+WHAT_x86_64 := HOST
+WHAT_poky := DEV
+# LoongArch 移植：补上龙芯的目标三元组，走主机分支（与 libscif 的 TARGET_ARCH 判定同理）
+WHAT_loongarch64 := HOST
+WHAT := $(WHAT_$(TARGET_MACHINE))
+
+ifeq ($(WHAT),HOST)
+CC_FLAGS += -D"COIHOST"
+endif
+
+ifeq ($(WHAT),DEV)
+CC_FLAGS += -std=c++03 -D"_GLIBCXX_USE_CXX11_ABI=0"
+endif
+
+# actually only one file difference!
+LIB_SRC = $($(WHAT)_LIB_SRC)
+LIB_OBJ = $(patsubst src/%, $(DIR_BUILD)%.o, $(basename $(LIB_SRC)))
+
+ALL_SRC := $(sort $(LIB_SRC) $(COMMON_SRC) $(DAEMON_SRC) \
+		$(MICNATIVELOADEX_SRC) \
+		$(COITRACE_SRC) $(COITRACELIB_SRC) $(METADATA_SRC))
+
+# This if block ensures documentation is only built for the host
+ifeq ($(WHAT),HOST)
+MANUALS := manuals
+else
+MANUALS :=
+endif
+
+# check if we have at least one TRANSPORT layer enabled
+# fallback to SCIF if none of layers was selected
+TRANSPORT_FLAGS := $(filter -DTRANSPORT_%, $(CC_FLAGS))
+$(info $$CC_FLAGS is ${CC_FLAGS})
+$(info $$CFLAGS is ${CFLAGS})
+$(info $$TRANSPORT_FLAGS is ${TRANSPORT_FLAGS})
+
+ifeq ($(strip $(TRANSPORT_FLAGS)),)
+CC_FLAGS += "-DTRANSPORT_SCIF"
+LD_FLAGS += "-lscif"
+$(info none of transport layers selected, fallback to SCIF)
+$(info $$CC_FLAGS is set to ${CC_FLAGS})
+$(info $$LD_FLAGS is set to ${LD_FLAGS})
+endif
+
+ifdef TEST_SUP
+
+all: $(DIR_BUILD)$(COMMON_LIB)
+
+else
+ifeq ($(WHAT),)
+all: $(DIR_BUILD)$($(WHAT)_LIB)			\
+	 $(DIR_BUILD)$(COMMON_LIB)			\
+	 $(DIR_BUILD)$(DAEMON_BIN)			\
+	 $(DIR_BUILD)$(MICNATIVELOADEX_BIN)	\
+	 $(DIR_BUILD)$(COITRACE_BIN)		\
+	 $(DIR_BUILD)$(COITRACELIB_LIB)		\
+	 $(MANUALS)
+endif
+
+ifeq ($(WHAT),DEV)
+all: $(DIR_BUILD)$($(WHAT)_LIB)			\
+	 $(DIR_BUILD)$(COMMON_LIB)			\
+	 $(DIR_BUILD)$(DAEMON_BIN)
+endif
+
+ifeq ($(WHAT),HOST)
+all: $(DIR_BUILD)$($(WHAT)_LIB)			\
+	 $(DIR_BUILD)$(COMMON_LIB)			\
+	 $(DIR_BUILD)$(MICNATIVELOADEX_BIN)	\
+	 $(DIR_BUILD)$(COITRACE_BIN)		\
+	 $(DIR_BUILD)$(COITRACELIB_LIB)		\
+	 $(MANUALS)
+endif
+endif
+
+compat-lib:
+	COMPAT_LIB_NAME=$($(WHAT)_LIB) COMPAT_LIB_PATTERN="COI" COMPAT_INPUT_DIR=$(DIR_BUILD) COMPAT_OUTPUT_DIR=$(DIR_BUILD) ./compat-lib.sh
+
+install-hooks:
+	@if ! [ -h $(PRE_COMMIT_HOOK) ]; then \
+		echo "hook $(PRE_COMMIT_HOOK) created"; \
+		ln -s ../../$(FORMAT_SCRIPT) $(PRE_COMMIT_HOOK); \
+	else \
+		echo "hook $(PRE_COMMIT_HOOK) already exist"; \
+	fi
+
+format:
+	$(ASTYLE_DIR)/$(ASTYLE_VER)/astyle $(ASTYLE_OPTIONS)
+
+release-knc:
+	$(MAKE) DIR_BUILD=build/host-linux-release/             \
+			WHAT=HOST -j $(nthreads) CC=gcc CXX=g++         \
+			CFLAGS="-DTRANSPORT_SCIF"                       \
+			LDFLAGS="-lscif $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-release/           \
+			WHAT=DEV CC=$(KNCPREFIX)gcc CXX=$(KNCPREFIX)g++ \
+			AR=$(KNCPREFIX)ar -j $(nthreads)                \
+			CFLAGS="-DTRANSPORT_SCIF"                       \
+			LDFLAGS="-lscif $(LDFLAGS)"
+
+release-knl:
+	$(MAKE) DIR_BUILD=build/host-linux-release/             \
+			WHAT=HOST -j $(nthreads) CC=gcc CXX=g++         \
+			CFLAGS="-DTRANSPORT_SCIF"                       \
+			LDFLAGS="-lscif $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-release/           \
+			WHAT=DEV CC=gcc CXX=g++ AR=ar -j $(nthreads)    \
+			CFLAGS="-DTRANSPORT_SCIF"                       \
+			LDFLAGS="-lscif $(LDFLAGS)"
+
+release-knlsb:
+	$(MAKE) DIR_BUILD=build/host-linux-release/             \
+			WHAT=HOST -j $(nthreads) CC=gcc CXX=g++ AR=ar   \
+			CFLAGS="-DTRANSPORT_OFI"                        \
+			LDFLAGS="-lfabric $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-release/           \
+			WHAT=DEV -j $(nthreads) CC=gcc CXX=g++ AR=ar    \
+			CFLAGS="-DTRANSPORT_OFI"                        \
+			LDFLAGS="-lfabric -libverbs $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-release/           \
+			WHAT=DEV -j $(nthreads) CC=gcc CXX=g++ AR=ar    \
+			compat-lib
+debug-knc:
+	$(MAKE) DIR_BUILD=build/host-linux-debug/               \
+			WHAT=HOST -j $(nthreads) CC=gcc CXX=g++         \
+			CFLAGS="-DDEBUG -DTRANSPORT_SCIF"               \
+			LDFLAGS="-lscif $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-debug/             \
+			WHAT=DEV CC=$(KNCPREFIX)gcc CXX=$(KNCPREFIX)g++ \
+			AR=$(KNCPREFIX)ar -j $(nthreads)                \
+			CFLAGS="-DDEBUG -DTRANSPORT_SCIF"               \
+			LDFLAGS="-lscif $(LDFLAGS)"
+
+debug-knl:
+	$(MAKE) DIR_BUILD=build/host-linux-debug/               \
+			WHAT=HOST -j $(nthreads) CC=gcc CXX=g++         \
+			CFLAGS="-DDEBUG -DTRANSPORT_SCIF"               \
+			LDFLAGS="-lscif $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-debug/             \
+			WHAT=DEV CC=gcc CXX=g++ AR=ar -j $(nthreads)    \
+			CFLAGS="-DDEBUG -DTRANSPORT_SCIF"               \
+			LDFLAGS="-lscif $(LDFLAGS)"
+
+debug-knlsb:
+	$(MAKE) DIR_BUILD=build/host-linux-debug/               \
+			WHAT=HOST -j $(nthreads) CC=gcc CXX=g++         \
+			CFLAGS="-DDEBUG -DTRANSPORT_OFI"                \
+			LDFLAGS="-lfabric $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-debug/             \
+			WHAT=DEV CC=gcc CXX=g++ AR=ar -j $(nthreads)    \
+			CFLAGS="-DDEBUG -DTRANSPORT_OFI"                \
+			LDFLAGS="-lfabric -libverbs $(LDFLAGS)"
+	$(MAKE) DIR_BUILD=build/device-linux-debug/           \
+			WHAT=DEV -j $(nthreads) CC=gcc CXX=g++ AR=ar    \
+			compat-lib
+
+coverage_card:
+	export COVCCFG=coverage/cov_cfg;export BULLSEYE_PATH=$(CARDBIN);export COVFILE=coverage/coi/coi_card.cov;$(MAKE) DIR_BUILD=build/device-linux-debug-coverage/ \
+		WHAT=DEV CC=x86_64-k1om-linux-gcc CXX=x86_64-k1om-linux-g++ AR=$(KNCPREFIX)ar \
+		-j $(nthreads) CFLAGS="-DDEBUG -fprofile-arcs -ftest-coverage"
+	export COVCCFG=coverage/cov_cfg;export BULLSEYE_PATH=$(CARDBIN);export COVFILE=coverage/coi/coi_card.cov;$(MAKE) DIR_BUILD=build/device-linux-release-coverage/ \
+		WHAT=DEV CC=x86_64-k1om-linux-gcc CXX=x86_64-k1om-linux-g++ AR=$(KNCPREFIX)ar \
+		-j $(nthreads) CFLAGS="-fprofile-arcs -ftest-coverage"
+
+coverage_host:
+	export COVCCFG=coverage/cov_cfg;export COVFILE=coverage/coi/coi_host.cov;$(MAKE) DIR_BUILD=build/host-linux-debug-coverage/ \
+		WHAT=HOST -j $(nthreads) CFLAGS="-DDEBUG -fprofile-arcs -ftest-coverage" CC=gcc CXX=g++
+	export COVCCFG=coverage/cov_cfg;export COVFILE=coverage/coi/coi_host.cov;$(MAKE) DIR_BUILD=build/host-linux-release-coverage/ \
+		WHAT=HOST -j $(nthreads) CFLAGS="-fprofile-arcs -ftest-coverage" CC=gcc CXX=g++
+
+HEADER_FILES := $(shell find . src/include -name '*.h')
+DOC_FILES := $(shell find . src/docs_config -name '*')
+include src/docs_config/version.txt
+COI_PDF_FILENAME := MIC_COI_API_Reference_Manual_$(COI_MAJOR_VERSION)_$(COI_MINOR_VERSION).pdf
+ifneq ("$(wildcard /opt/mpss_toolchains/doxygen/1.6.3/bin/doxygen)","")
+DOXYGEN_EXE := /opt/mpss_toolchains/doxygen/1.6.3/bin/doxygen
+else
+DOXYGEN_EXE := doxygen
+endif
+TEX_BIN_DIR := /usr/bin
+
+release-docs:
+	$(MAKE) manuals CC=gcc CXX=g++ WHAT=HOST DIR_BUILD=build/host-linux-release/
+
+debug-docs:
+	$(MAKE) manuals CC=gcc CXX=g++ WHAT=HOST DIR_BUILD=build/host-linux-debug/
+
+ifeq ($(proj_target),knlsb)
+manuals: $(DIR_BUILD).dirtree $(DIR_BUILD)docs/$(COI_PDF_FILENAME)
+	$(MAKE) -C docs/man/ WHAT=HOST DIR_BUILD=$(DIR_BUILD)
+else
+manuals: $(DIR_BUILD).dirtree $(DIR_BUILD)docs/$(COI_PDF_FILENAME) $(DIR_BUILD)docs/coi_getting_started.pdf
+	$(MAKE) -C docs/man/ WHAT=HOST DIR_BUILD=$(DIR_BUILD)
+$(DIR_BUILD)docs/coi_getting_started.pdf:
+	cp docs/coi_getting_started.pdf $@
+endif
+
+$(DIR_BUILD)docs/$(COI_PDF_FILENAME):
+	src/docs_config/build_docs.sh $(COI_MAJOR_VERSION) $(COI_MINOR_VERSION) src $(DIR_BUILD) $(DOXYGEN_EXE) $(TEX_BIN_DIR)
+
+clean:
+	@echo Cleaning...
+	$(MAKE) -C docs/man/ clean WHAT=HOST DIR_BUILD=$(DIR_BUILD)
+	rm -rf $(DIR_BUILD)
+	rm -f $(DIR_BUILD).dirtree
+	rm -f $(METADATA_SRC)
+
+$(DIR_BUILD).dirtree:
+	mkdir -p $(sort $(DIR_BUILD) $(dir $(ALL_SRC:src/%=$(DIR_BUILD)%)))
+	mkdir -p $(DIR_BUILD)docs
+	@touch $@
+
+define GENDEPEND
+$(patsubst src/%, $(DIR_BUILD)%.d, \
+	$(basename $(filter %.$(strip $(1)), $(ALL_SRC)))): \
+$(DIR_BUILD)%.d: src/%.$(strip $(1)) $(DIR_BUILD).dirtree
+	$(CC) $(CC_FLAGS) $$< -MM -MF $$@ -MQ $$@ -MQ $$(@:.d=.o)
+endef
+$(eval $(call GENDEPEND, c))
+$(eval $(call GENDEPEND, cpp))
+
+$(DIR_BUILD)%.o: $(DIR_BUILD).dirtree
+	$(CC) $(CC_FLAGS) $(MICNATIVELOADEX_META) $(filter %.c %.cpp, $^) -c -o $@
+
+$(DIR_BUILD)$($(WHAT)_LIB): $(LIB_OBJ) $(METADATA_OBJ) $(DIR_BUILD)$(COMMON_LIB)
+	$(CXX) $(CC_FLAGS) $^ $(LD_FLAGS) -o $@ \
+		$(V_MAP) -shared -Wl,-soname,$(@F).0
+
+$(DIR_BUILD)$(COMMON_LIB): $(COMMON_OBJ) $(METADATA_OBJ)
+	$(AR) cr $@ $^
+
+$(DIR_BUILD)$(DAEMON_BIN): $(DAEMON_OBJ) $(METADATA_OBJ) $(DIR_BUILD)$(COMMON_LIB)
+	 $(CXX) $(CC_FLAGS) $^ $(LD_FLAGS) -o $@ \
+		-Wl,--enable-new-dtags -rdynamic -pie
+
+$(DIR_BUILD)$(MICNATIVELOADEX_BIN): $(MICNATIVELOADEX_OBJ) $(METADATA_OBJ) $(DIR_BUILD)$($(WHAT)_LIB) \
+	$(DIR_BUILD)$(COMMON_LIB)
+	$(CXX) $(CC_FLAGS) $(MICNATIVELOADEX_META) $(LD_FLAGS) $^ -o $@ \
+		-Wl,--enable-new-dtags -pie
+
+$(DIR_BUILD)$(COITRACE_BIN): $(COITRACE_OBJ) $(METADATA_OBJ)
+	$(CXX) $(CC_FLAGS) $(LD_FLAGS) $^ -o $@ \
+		-Wl,--enable-new-dtags -pie
+
+$(DIR_BUILD)$(COITRACELIB_LIB): $(COITRACELIB_OBJ) $(METADATA_OBJ)
+	$(CXX) $(CC_FLAGS) $(LD_FLAGS) $^ -o $@ \
+		-shared -Wl,-soname,$(@F).0
+
+ifeq ($(filter $(IGNORE_DEP_TARGETS), $(MAKECMDGOALS)),)
+-include $(patsubst src/%, $(DIR_BUILD)%.d, $(basename $(ALL_SRC)))
+endif
+
+install-exec:
+	@echo ----- Installing into $(DESTDIR) -----
+ifneq ($(DESTDIR),)
+	$(INSTALL_d) $(DESTDIR)
+endif
+ifdef TEST_SUP
+	$(INSTALL_d) $(DESTDIR)$(includedir)
+	$(INSTALL_d) $(DESTDIR)$(includedir)/intel-coi/internal
+	$(INSTALL_f) src/include/internal/* $(DESTDIR)$(includedir)/intel-coi/internal
+	$(INSTALL_d) $(DESTDIR)$(libdir)
+	$(INSTALL_f) $(DIR_BUILD)$(COMMON_LIB)	$(DESTDIR)$(libdir)
+else
+	$(INSTALL_d) $(DESTDIR)$(bindir)
+ifeq ($(WHAT),DEV)
+	$(INSTALL_x) $(DIR_BUILD)$(DAEMON_BIN) $(DESTDIR)$(bindir)
+ifeq ($(proj_target),knlsb)
+	$(INSTALL_d) $(DESTDIR)$(sdkdir)
+	$(INSTALL_d) $(DESTDIR)$(sdkdir)$(sdklibdir)
+	$(INSTALL_x) $(DIR_BUILD)$($(WHAT)_LIB).compat \
+		$(DESTDIR)$(sdkdir)$(sdklibdir)/$($(WHAT)_LIB).0
+	cd $(DESTDIR)$(sdkdir)/$(sdklibdir); ln -sf $($(WHAT)_LIB).0 $($(WHAT)_LIB)
+	$(INSTALL_x) imports/libmyodbl-service.so.0 $(DESTDIR)$(sdkdir)$(sdklibdir)/libmyodbl-service.so.0
+	$(INSTALL_x) imports/libmyo-service.so.0 $(DESTDIR)$(sdkdir)$(sdklibdir)/libmyo-service.so.0
+	cd $(DESTDIR)$(sdkdir)/$(sdklibdir); ln -sf libmyodbl-service.so.0 libmyodbl-service.so
+	cd $(DESTDIR)$(sdkdir)/$(sdklibdir); ln -sf libmyo-service.so.0 libmyo-service.so
+else
+	# install initd stuff only on KNC and KNLLB
+	$(INSTALL_d) $(DESTDIR)$(initdir)
+	$(INSTALL_x) init.d/coi $(DESTDIR)$(initdir)
+	$(INSTALL_d) $(DESTDIR)$(rc3dir)
+	$(INSTALL_d) $(DESTDIR)$(rc5dir)
+	cd $(DESTDIR)$(rc3dir); ln -sf ../init.d/coi S95coi
+	cd $(DESTDIR)$(rc5dir); ln -sf ../init.d/coi S95coi
+endif # KNLSB
+endif # DEV
+	$(INSTALL_d) $(DESTDIR)$(libdir)
+	$(INSTALL_x) $(DIR_BUILD)$($(WHAT)_LIB) \
+		$(DESTDIR)$(libdir)/$($(WHAT)_LIB).0
+	cd $(DESTDIR)$(libdir); ln -sf $($(WHAT)_LIB).0 $($(WHAT)_LIB)
+	# headers are needed in both card and host locations
+	$(INSTALL_d) $(DESTDIR)$(includedir)
+	$(INSTALL_d) $(DESTDIR)$(includedir)/intel-coi/common
+	$(INSTALL_d) $(DESTDIR)$(includedir)/intel-coi/sink
+	$(INSTALL_d) $(DESTDIR)$(includedir)/intel-coi/source
+	$(INSTALL_f) src/include/common/* $(DESTDIR)$(includedir)/intel-coi/common
+	$(INSTALL_f) src/include/sink/* $(DESTDIR)$(includedir)/intel-coi/sink
+	$(INSTALL_f) src/include/source/* $(DESTDIR)$(includedir)/intel-coi/source
+ifndef KNL
+	$(INSTALL_d) $(DESTDIR)$(includedir)/intel-coi/internal
+	$(INSTALL_f) src/include/internal/* $(DESTDIR)$(includedir)/intel-coi/internal
+	$(INSTALL_f) $(DIR_BUILD)$(COMMON_LIB)	$(DESTDIR)$(libdir)
+endif
+ifeq ($(WHAT),HOST)
+	$(INSTALL_x) $(DIR_BUILD)$(MICNATIVELOADEX_BIN) $(DESTDIR)$(bindir)
+	$(INSTALL_x) $(DIR_BUILD)$(COITRACE_BIN) $(DESTDIR)$(bindir)
+	$(INSTALL_x) $(DIR_BUILD)$(COITRACELIB_LIB) $(DESTDIR)$(libdir)/$(COITRACELIB_LIB).0
+	$(INSTALL_d) $(DESTDIR)$(docdir)$(COI_DOC)
+	$(INSTALL_d) $(DESTDIR)$(mandir)/man3
+	$(INSTALL_f) $(DIR_BUILD)docs/man/man3/* $(DESTDIR)$(mandir)/man3
+	$(INSTALL_f) $(DIR_BUILD)docs/$(COI_PDF_FILENAME) $(DESTDIR)$(docdir)$(COI_DOC)
+ifeq ($(proj_target),knlsb)
+	$(INSTALL_d) $(DESTDIR)$(sdkdir)$(sdkincdir)
+	cd $(DESTDIR)$(sdkdir)$(sdkincdir); ln -sf $(includedir)/intel-coi intel-coi
+else
+	$(INSTALL_f) src/release_notes.txt $(DESTDIR)$(docdir)$(COI_DOC)
+	$(INSTALL_f) docs/coi_getting_started.pdf $(DESTDIR)$(docdir)$(COI_DOC)
+endif
+	$(INSTALL_d) $(DESTDIR)$(docdir)$(COI_DOC)tutorials
+	cp -r src/tutorial/* $(DESTDIR)$(docdir)$(COI_DOC)tutorials/
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ | grep .sln | xargs rm -f
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ | grep Windows | xargs rm -f
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ | grep .vcxproj | xargs rm -f
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ | grep _mic | xargs rm -f
+ifeq ($(proj_target),knlsb)
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ -name Makefile -exec rm -f {} +
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ -name Makefile.sb | sed -e "p;s/Makefile.sb/Makefile/" | xargs -n2 mv
+else
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ -name Makefile.sb -exec rm -f {} +
+endif
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ -type f | xargs chmod 666
+	find $(DESTDIR)$(docdir)$(COI_DOC)tutorials/ -type d | xargs chmod 755
+endif # HOST
+endif # TEST_SUP
+
+
+#multiple install targets based on recursion
+release-install:
+	$(MAKE) install-exec CC=gcc WHAT=HOST DIR_BUILD=build/host-linux-release/ \
+		DESTDIR=install-host
+	$(MAKE) install-exec CC=$(KNCPREFIX)gcc WHAT=DEV DIR_BUILD=build/device-linux-release/ \
+		DESTDIR=install-card
+
+release-knlsb-install:
+	$(MAKE) install-exec CC=gcc WHAT=HOST DIR_BUILD=build/host-linux-release/ \
+		prefix=/usr/
+	$(MAKE) install-exec CC=gcc WHAT=DEV DIR_BUILD=build/device-linux-release/ \
+		prefix=/usr/
+
+release-knl-install-host: release-install-host
+
+release-install-host:
+	$(MAKE) install-exec CC=gcc WHAT=HOST DIR_BUILD=build/host-linux-release/ \
+		prefix=/usr/
+
+release-install-sdk:
+	$(MAKE) install-exec CC=$(KNCPREFIX)gcc WHAT=DEV DIR_BUILD=build/device-linux-release/ \
+		DESTDIR=$(KNCCOMPILER) prefix=/usr/
+
+release-knl-install-sdk:
+	$(MAKE) install-exec CC=gcc WHAT=DEV DIR_BUILD=build/device-linux-release/ \
+		DESTDIR= prefix=/usr/
+
+debug-install:
+	$(MAKE) install-exec CC=gcc WHAT=HOST DIR_BUILD=build/host-linux-debug/ \
+		DESTDIR=install-host
+	$(MAKE) install-exec CC=$(KNCPREFIX)gcc WHAT=DEV DIR_BUILD=build/device-linux-debug/ \
+		DESTDIR=install-card
+
+debug-knlsb-install:
+	$(MAKE) install-exec CC=gcc WHAT=HOST DIR_BUILD=build/host-linux-debug/ \
+		prefix=/usr/
+	$(MAKE) install-exec CC=gcc WHAT=DEV DIR_BUILD=build/device-linux-debug/ \
+		prefix=/usr/
+
+debug-knl-install-sdk:
+	$(MAKE) install-exec CC=gcc WHAT=DEV DIR_BUILD=build/device-linux-debug/ \
+		DESTDIR= prefix=/usr/
+
+debug-knl-install-host: debug-install-host
+
+debug-install-host:
+	$(MAKE) install-exec CC=gcc WHAT=HOST DIR_BUILD=build/host-linux-debug/ \
+		prefix=/usr/
+
+#This needs to install SDK components into cross compiler
+debug-install-sdk:
+	$(MAKE) install-exec CC=$(KNCPREFIX)gcc WHAT=DEV DIR_BUILD=build/device-linux-debug/ \
+		DESTDIR=$(KNCCOMPILER) prefix=/usr/
+
+
+ifeq ($(proj_target),knllb)
+install: release-knl-install-host
+release: release-knl
+debug: debug-knl
+else ifeq ($(proj_target), knllb_card)
+install: install-exec
+release: release-knl
+debug: debug-knl
+else ifeq ($(proj_target), knlsb)
+install: release-knlsb-install
+release: release-knlsb
+debug: debug-knlsb
+else
+release: release-knc
+debug: debug-knc
+install: install-exec
+endif

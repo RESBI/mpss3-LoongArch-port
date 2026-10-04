@@ -1,0 +1,32 @@
+myoArenaFree(3)
+===============
+:doctype: manpage
+
+NAME
+----
+myoArenaFree - Frees the memory space allocated by myoArenaMalloc to the
+specified arena.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern void myoArenaFree(MyoArena in_Arena, void *in_pPtr)*
+
+DESCRIPTION
+-----------
+ parameter: in_Arena Arena handle returned by previous call to
+myoArenaCreate.
+
+
+ parameter: in_pPtr The start address of the specified memory
+space, which must be retured by myoArenaMalloc.
+
+
+
+RETURN VALUE
+------------
+void

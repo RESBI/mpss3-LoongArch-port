@@ -1,0 +1,34 @@
+COIPIPELINESETCPUMASK(3)
+========================
+:doctype: manpage
+
+NAME
+----
+COIPipelineSetCPUMask - Add a particular core:thread pair to a COI_CPU_MASK.
+
+
+SYNOPSIS
+--------
+*#include <COIPipeline_source.h>*
+
+*COIRESULT COIPipelineSetCPUMask(COIPROCESS 'in_Process', uint32_t
+'in_CoreID', uint8_t 'in_ThreadID', COI_CPU_MASK* \*'out_pMask'*);*
+
+DESCRIPTION
+-----------
+
+The *COIPipelineSetCPUMask*() call adds a particular core:thread pair to a
+COI_CPU_MASK.
+
+RETURN VALUE
+------------
+
+Upon successful return, *COIPipelineSetCPUMask*() call returns COI_SUCCESS
+indicating that mask was set otherwise;
+
+COI_OUT_OF_RANGE if the in_CoreID or in_ThreadID is out of range.
+
+COI_INVALID_POINTER if out_pMask is invalid.
+
+COI_INVALID_HANDLE if in_Process is invalid.
+

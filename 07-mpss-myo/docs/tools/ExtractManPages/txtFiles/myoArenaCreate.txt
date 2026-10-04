@@ -1,0 +1,102 @@
+myoArenaCreate(3)
+=================
+:doctype: manpage
+
+NAME
+----
+myoArenaCreate - Create an arena with specified ownership type and property.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoArenaCreate(MyoOwnershipType in_Type,
+int in_Property, MyoArena *out_pArena)*
+
+DESCRIPTION
+-----------
+ parameter: in_Type Specified ownership type (MYO_ARENA_OURS or
+MYO_ARENA_MINE).
+
+
+ parameter: in_Property Specified properties of the arena. Set it
+to 0 to use default properties.
+
+MYO_RELEASE_CONSISTENCY or MYO_STRONG_RELEASE_CONSISTENCY
+or MYO_STRONG_CONSISTENCY:
+
+Consistency modes for "OURS" arenas. For MYO_RELEASE_CONSISTENCY,
+there are 2 functions, "Acquire" and "Release", which are
+used for memory ordering. "Release" makes all local stores
+prior to the release globally visible; "Acquire" syncs up the
+local memory with all stores that have been made globally
+visible. However, there is no definite answer as to whether
+local stores can be globally visible before reaching a release
+point, nor whether the newest globally visible stores can be
+updated to local before reaching an acquire point. By using
+MYO_STRONG_RELEASE_CONSISTENCY, the answer to these questions
+is "no". A sequential consistency model is maintained to the
+arena when using MYO_STRONG_CONSISTENCY.
+MYO_RELEASE_CONSISTENCY is the default property.
+
+MYO_UPDATE_ON_DEMAND or MYO_UPDATE_ON_ACQUIRE:
+
+Only apply to "OURS" arenas with "Release Consistency".
+MYO_UPDATE_ON_ACQUIRE means that the shared pages of this
+arena will be updated on acquire point; MYO_UPDATE_ON_DEMAND
+means that the shared pages will not be updated until they
+are accessed. MYO_UPDATE_ON_DEMAND is the default property.
+
+MYO_RECORD_DIRTY or MYO_NOT_RECORD_DIRTY:
+
+This property controls whether to record dirty pages.
+There will be runtime overhead when recording dirty pages,
+as it can reduce the communication data. It is a trade-off
+for performance. Also when MYO_NOT_RECORD_DIRTY is set for
+"OURS" arena, the runtime cannot guarantee the correctness
+when the host and card modify the same shared page between
+the same sync segment. MYO_RECORD_DIRTY is the default
+property.
+
+MYO_ONE_VERSION or MYO_MULTI_VERSION:
+
+Only apply to "OURS" arenas with "Release Consistency". When
+MYO_MULTI_VERSION is set, this arena can only be "release" on
+HOST side and "acquire" on CARD side. Releasing the arena on
+HOST will create a new versioned data and put it into a FIFO;
+acquiring the arena on CARD will get the versioned data
+from the FIFO one by one. MYO_ONE_VERSION is the default
+property.
+
+MYO_CONSISTENCY or MYO_NO_CONSISTENCY:
+
+Only apply to "OURS" arenas with "Release Consistency". When
+MYO_NO_CONSISTENCY is set, the consistency of the arena will
+not be maintained. That is, it is a no-op operation when
+calling acquire/release for such arenas. MYO_CONSISTENCY is
+the default property.
+
+MYO_HOST_TO_DEVICE and MYO_DEVICE_TO_HOST:
+
+When it is certain that there is only one communication
+direction for this arena, it can be created with only
+MYO_HOST_TO_DEVICE or MYO_DEVICE_TO_HOST so the runtime
+can perform optimizations. The default property is
+MYO_HOST_TO_DEVICE | MYO_DEVICE_TO_HOST.
+
+
+
+ parameter: out_pArena Used to store the handle of the created arena.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

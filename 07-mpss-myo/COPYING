@@ -1,0 +1,5 @@
+Majority of the MYO project is under the LGPL license.
+However, there are parts of the project that use different licenses.
+See the headers of the individual files to find out the exact license
+and COPYING.LGPL, COPYING.BSD, and docs/tutorials/COPYING files for the
+licenses texts.

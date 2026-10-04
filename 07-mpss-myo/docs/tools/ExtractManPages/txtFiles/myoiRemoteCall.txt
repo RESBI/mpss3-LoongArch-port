@@ -1,0 +1,38 @@
+myoiRemoteCall(3)
+=================
+:doctype: manpage
+
+NAME
+----
+myoiRemoteCall - Call a remote callable function. If there are multiple arguments
+for the function, pack them to a shared buffer beforehand and take the
+address of the shared buffer as this function. After receiving the call
+requests from other peers, the arguments should be unpacked from the
+shared buffer before calling the target function. The shared buffer
+can also be used to store the return value of the function.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoiRFuncCallHandle myoiRemoteCall(char *in_pFuncName,
+void *in_pArgs, int in_deviceNum)*
+
+DESCRIPTION
+-----------
+ parameter: in_pFuncName name of the function.
+
+
+ parameter: in_pArgs address of the shared buffer.
+
+
+
+RETURN VALUE
+------------
+
+Handle used to check the result.
+
+

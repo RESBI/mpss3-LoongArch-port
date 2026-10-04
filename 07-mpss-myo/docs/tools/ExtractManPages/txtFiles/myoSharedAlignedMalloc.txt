@@ -1,0 +1,36 @@
+myoSharedAlignedMalloc(3)
+=========================
+:doctype: manpage
+
+NAME
+----
+myoSharedAlignedMalloc - Allocates size bytes from the default arena. The start
+address of the allocated memory will be a multiple of alignment,
+which must be a power of two.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern void* myoSharedAlignedMalloc(size_t in_Size,
+size_t in_Alignment)*
+
+DESCRIPTION
+-----------
+ parameter: in_Size Size (bytes) of the required memory space.
+
+
+ parameter: in_Alignment The alignment value, which must be an power of two.
+
+
+
+RETURN VALUE
+------------
+
+The start address of the allocated memory space.
+NULL: Failed.
+
+

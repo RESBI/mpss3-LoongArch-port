@@ -1,0 +1,29 @@
+COIEVENTUNREGISTERUSEREVENT(3)
+==============================
+:doctype: manpage
+
+NAME
+----
+COIEventUnregisterUserEvent - Unregister a User COIEVENT.
+
+
+SYNOPSIS
+--------
+*#include <COIEvent_source.h>*
+
+*COIRESULT COIEventUnregisterUserEvent(COIEVENT 'in_Event');*
+
+DESCRIPTION
+-----------
+The *COIEventUnregisterUserEvent*() call unregisters a User COIEVENT.
+Unregistering an unsignaled event is similar to firing an event.
+Except Calling COIEventWait on an event that is being unregistered
+returns COI_EVENT_CANCELED.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIEventUnregisterUserEvent*() calls returns
+COI_SUCCESS indicating that event is successfully unregistered otherwise;
+COI_INVALID_HANDLE if in_Event is not a UserEvent.

@@ -1,0 +1,31 @@
+COIEVENTSIGNALUSEREVENT(3)
+==========================
+:doctype: manpage
+
+NAME
+----
+COIEventSignalUserEvent - Signal one shot user event.
+
+SYNOPSIS
+--------
+*#include <COIEvent_common.h>*
+
+COIRESULT COIEventSignalUserEvent(COIEVENT 'in_Event');
+
+DESCRIPTION
+-----------
+The *COIEventSignalUserEvent*() call signals one shot user event. User events
+created on source can be signaled from both sink and source. This fires the event
+and wakes up threads waiting on COIEventWait.
+
+Note: For events that are not registered or already signaled this call will behave as a NOP.
+Users need to make sure that they pass valid events on the sink side.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIEventSignalUserEvent*() returns
+COI_SUCCESS indicating the event was successfully signaled or ignored;
+otherwise COI_INVALID_HANDLE if in_Event was not a User event, COI_ERROR if
+the signal fails to be sent from the sink.
+

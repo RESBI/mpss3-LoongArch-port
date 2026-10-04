@@ -1,0 +1,25 @@
+myoReleaseOwnership(3)
+======================
+:doctype: manpage
+
+NAME
+----
+myoReleaseOwnership - Change the ownership type of the default arena to
+MYO_ARENA_OURS.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoReleaseOwnership()*
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

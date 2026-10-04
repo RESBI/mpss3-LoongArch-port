@@ -1,0 +1,25 @@
+myoAcquireOwnership(3)
+======================
+:doctype: manpage
+
+NAME
+----
+myoAcquireOwnership - Changes the ownership type of the default arena to
+MYO_ARENA_MINE.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoAcquireOwnership()*
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

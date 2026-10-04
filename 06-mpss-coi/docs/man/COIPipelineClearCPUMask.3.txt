@@ -1,0 +1,33 @@
+COIPIPELINECLEARCPUMASK(3)
+==========================
+:doctype: manpage
+
+NAME
+----
+COIPipelineClearCPUMask - Clears a given mask.
+
+
+SYNOPSIS
+--------
+*#include <COIPipeline_source.h>*
+
+*COIRESULT COIPipelineClearCPUMask( COI_CPU_MASK* \*'in_Mask'*);*
+
+DESCRIPTION
+-----------
+
+The *COIPipelineClearCPUMask*() call clears a given mask. Note that the
+memory contents of COI_CPU_MASK are not guaranteed to be zero when
+declaring a COI_CPU_MASK variable. Thus, prior to setting a specific
+affinity to in_Mask it is important to call this function first.
+
+RETURN VALUE
+------------
+
+Upon successful return, *COIPipelineClearCPUMask*() call returns COI_SUCCESS
+indicating that mask was cleared otherwise; COI_INVALID_POINTER if in_Mask is
+invalid.
+
+
+
+

@@ -1,0 +1,33 @@
+myoSemCreate(3)
+===============
+:doctype: manpage
+
+NAME
+----
+myoSemCreate - Create a semaphore and return the semaphore handle.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoSemCreate(int in_Value, MyoSem *out_pSem)*
+
+DESCRIPTION
+-----------
+ parameter: in_Value the initial value for the semaphore.
+
+
+ parameter: out_pSem Used to store the handle of the created semaphore.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

@@ -1,0 +1,59 @@
+COIENGINEGETCOUNT(3)
+====================
+:doctype: manpage
+
+NAME
+----
+COIEngineGetCount - Returns the number of engines in the system that match the
+		    provided device type.
+
+SYNOPSIS
+--------
+*#include <COIEngine_source.h>*
+
+*COIRESULT COIEngineGetCount(COI_DEVICE_TYPE 'in_DeviceType', uint32_tpass:[*] 'out_pNumEngines');*
+
+DESCRIPTION
+-----------
+Note that it is possible to enumerate different types of offload
+devices that can be used for the current session. The devices can be either
+coprocessors connected via PCIe (Intel(R) XeonPhi(TM) x100 or x200 based) or
+servers connected via Intel(R) OmniPath(TM) fast fabric. Other fabric types
+can also work, if supported OpenFabrics Interface (libfabric) library is
+present in the system.
+
+The number of available coprocessor devices (i.e. cards connected via PCIe)
+is detected by the COI runtime. The number of devices connected via fabric
+is determined using environmental variable COI_OFFLOAD_NODES. It should contain
+comma-separated list of host names and/or IP addresses of machines that
+should be available as offload targets. Please note that actuall connetivity
+is not checked at the moment of calling this function. The variable is parsed during
+the first call to COIEngineGetCount function and is not parsed again later.
+
+The user can limit the number of devices available for offloading via fabric
+using COI_OFFLOAD_DEVICES variable. The format of this variable is
+comma-separated list of integer values that are indices of nodes listed in
+COI_OFFLOAD_NODES. Only devices selected by COI_OFFLOAD_DEVICES are available.
+
+Please note that mixing devices connected via fabric and PCIe is not supported.
+
+_in_DeviceType_::
+        [in] Specifies the device type of the engine requested.
+
+_out_pNumEngines_::
+        [out] The number of engines available. This can be used to index
+        into the engines using COIEngineGetHandle().
+
+RETURN VALUE
+------------
+Upon successful completion, *COIEngineGetCount*() returns *COI_SUCCESS*
+otherwise:
+
+*COI_DOES_NOT_EXIST* if the in_DeviceType parameter is not valid.
+
+*COI_INVALID_POINTER* if the out_pNumEngines parameter is NULL.
+
+*COI_OUT_OF_RANGE* if number of selected devices is greater than 8.
+
+*COI_INCORRECT_FORMAT* if COI_OFFLOAD_NODES or COI_OFFLOAD_DEVICES
+                       is incorrectly formatted or contains unsupported values.

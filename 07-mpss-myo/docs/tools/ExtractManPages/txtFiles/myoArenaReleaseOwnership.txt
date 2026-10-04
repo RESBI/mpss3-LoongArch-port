@@ -1,0 +1,31 @@
+myoArenaReleaseOwnership(3)
+===========================
+:doctype: manpage
+
+NAME
+----
+myoArenaReleaseOwnership - Change the ownership type of the arena to MYO_ARENA_OURS.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoArenaReleaseOwnership(MyoArena in_Arena)*
+
+DESCRIPTION
+-----------
+ parameter: in_Arena Arena handle returned by previous call to
+myoArenaCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

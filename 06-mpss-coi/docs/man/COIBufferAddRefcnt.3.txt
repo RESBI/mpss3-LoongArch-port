@@ -1,0 +1,52 @@
+COIBUFFERADDREFCNT(3)
+=====================
+:doctype: manpage
+
+NAME
+----
+COIBufferAddRefcnt - Increments the reference count on the specified buffer and process by in_AddRefcnt.
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferAddRefcnt(COIPROCESS 'in_Process', COIBUFFER 'in_Buffer', uint64_t 'in_AddRefcnt');*
+
+DESCRIPTION
+-----------
+The *COIBufferAddRefcnt*() call increments the refcnt for the buffer on the specified
+COI process by in_AddRefcnt. This refcnt will prevent this buffer from state changes or
+map requests until the reference count has been released.
+
+_in_Process_ ::
+     [in] The COI Process whose reference count for the specified buffer
+     the user wants to increment.
+
+_in_Buffer_ ::
+     [in] The buffer used in the specified coi process in which the user
+     wants to increment the reference count.
+
+_in_AddRefcnt_ ::
+     [in] The value the reference count will be incremented by.
+
+
+NOTES
+-----
+_1._ It is possible for enqueued run functions to be unable to
+execute due to all card memory being occupied by addref'ed
+buffers. As such, it is important that whenever a buffer is
+addref'd that there be no dependencies on future run functions
+for progress to be made towards releasing the buffer.
+
+_2._ When Using the Host API's AddRefcnt and ReleaseRefcnt you cannot
+mix them with the card side API's AddRef and ReleaseRef therefore mixing these two
+sets of API's would have unknown results and is not recommended.
+
+RETURN VALUE
+------------
+*COI_SUCCESS* :: if the reference count was successfully incremented.
+
+*COI_INVALID_HANDLE* :: if in_Buffer or in_Process are invalid handles.
+
+*COI_NOT_INITIALIZED* :: if in_Buffer does not have a buffer state of
+     COI_BUFFER_VALID on the in_Process.

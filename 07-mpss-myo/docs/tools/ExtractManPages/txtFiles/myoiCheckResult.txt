@@ -1,0 +1,30 @@
+myoiCheckResult(3)
+==================
+:doctype: manpage
+
+NAME
+----
+myoiCheckResult - Check whether the remote call is done.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiCheckResult(MyoiRFuncCallHandle in_Handle)*
+
+DESCRIPTION
+-----------
+ parameter: in_Handle handle of the remote call.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS (done); or
+an error number to indicate the error.
+
+

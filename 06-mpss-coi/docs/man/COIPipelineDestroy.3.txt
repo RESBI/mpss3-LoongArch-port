@@ -1,0 +1,27 @@
+COIPIPELINEDESTROY(3)
+=====================
+:doctype: manpage
+
+NAME
+----
+COIPipelineDestroy - Destroys the indicated pipeline, releasing its
+		     resources.
+
+SYNOPSIS
+--------
+*#include <COIPipeline_source.h>*
+
+*COIRESULT COIPipelineDestroy(COIPIPELINE 'in_Pipeline');*
+
+DESCRIPTION
+-----------
+
+The *COIPipelineDestroy*() call destroys the indicated pipeline, releasing
+its resources.
+
+
+RETURN VALUE
+------------
+
+Upon successful return, *COIPipelineDestroy*() call returns COI_SUCCESS
+indicating that pipeline was destroyed.

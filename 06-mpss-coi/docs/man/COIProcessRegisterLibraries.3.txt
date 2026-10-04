@@ -1,0 +1,62 @@
+COIPROCESSREGISTERLIBRARIES(3)
+==============================
+:doctype: manpage
+
+NAME
+----
+COIProcessRegisterLibraries - Registers shared libraries that are already in the host process's memory
+                              to be used during the shared library dependency resolution steps that take
+                              place during subsequent calls to COIProcessCreate* and COIProcessLoadLibrary*.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessRegisterLibraries(uint32_t 'in_NumLibraries', const void*
+'\*\*in_ppLibraryArray'*, const uint64_t* '\*in_pLibrarySizeArray'*,
+const char* '\*\*in_ppFileOfOriginArray'*, const uint64_t*
+'\*in_pFileOfOriginOffSetArray'*);*
+
+DESCRIPTION
+-----------
+
+The *COIProcessRegisterLibraries*() call registers shared libraries that
+are already in the host process's memory to be used during the shared library
+dependency resolution steps that take place during subsequent calls to
+COIProcessCreate* and COIProcessLoadLibrary*. If listed as a dependency,
+the registered library will be used to satisfy the dependency, even if
+there is another library on disk that also satisfies that dependency.
+
+Addresses registered must remain valid during subsequent calls to
+COIProcessCreate* and COIProcessLoadLibrary*.
+
+If the Sink is Linux, the shared libraries must have a library name
+(DT_SONAME field). On most compilers this means built with -soname.
+
+If successful, this API registers all the libraries. Otherwise none
+are registered.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessRegisterLibraries*() call returns
+COI_SUCCESS indicating that libraries were successfully registered otherwise;
+
+COI_OUT_OF_RANGE if in_NumLibraries is 0.
+
+COI_INVALID_POINTER if in_ppLibraryArray or in_pLibrarySizeArray
+are NULL.
+
+COI_INVALID_POINTER if any of the pointers in in_ppLibraryArray
+are NULL.
+
+COI_OUT_OF_RANGE if any of the values in in_pLibrarySizeArray is 0.
+
+COI_ARGUMENT_MISMATCH if either one of in_ppFileOfOriginArray
+and in_pFileOfOriginOffSetArray is NULL and the other is not.
+
+COI_OUT_OF_RANGE if one of the addresses being registered does not
+represent a valid library.
+

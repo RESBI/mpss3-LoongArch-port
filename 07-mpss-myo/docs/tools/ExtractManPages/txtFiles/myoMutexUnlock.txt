@@ -1,0 +1,32 @@
+myoMutexUnlock(3)
+=================
+:doctype: manpage
+
+NAME
+----
+myoMutexUnlock - Release the locked mutex.
+Currently, attempting to release an unlocked mutex will cause
+undefined results.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoMutexUnlock(MyoMutex in_Mutex)*
+
+DESCRIPTION
+-----------
+ parameter: in_Mutex the mutex handle returned by myoMutexCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

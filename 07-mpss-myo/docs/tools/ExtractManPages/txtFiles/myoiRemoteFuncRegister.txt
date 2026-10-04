@@ -1,0 +1,36 @@
+myoiRemoteFuncRegister(3)
+=========================
+:doctype: manpage
+
+NAME
+----
+myoiRemoteFuncRegister - Register a function so that it can be remotely called. This should be
+done in myoiUserInit or before calling myoiLibInit. After myoiLibInit,
+there will be a table on all peers, which contains the information for
+all remotely callable functions.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiRemoteFuncRegister(MyoiRemoteFuncType in_pFuncAddr,*
+
+DESCRIPTION
+-----------
+ parameter: in_pWrapFuncAddr address of the wrapper function.
+
+
+ parameter: in_pFuncName name of the function.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

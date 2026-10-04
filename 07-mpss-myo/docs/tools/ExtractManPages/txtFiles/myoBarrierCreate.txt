@@ -1,0 +1,35 @@
+myoBarrierCreate(3)
+===================
+:doctype: manpage
+
+NAME
+----
+myoBarrierCreate - Create a barrier and return the barrier handle.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoBarrierCreate(int in_Count, MyoBarrier *out_pBarrier)*
+
+DESCRIPTION
+-----------
+ parameter: in_Count the number of threads that must call
+myoBarrierWait before any of them successfully return.
+
+
+ parameter: out_pBarrier Used to store the handle of the created
+barrier.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

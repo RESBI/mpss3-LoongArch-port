@@ -1,0 +1,37 @@
+myoiTargetSharedMallocTableRegister(3)
+======================================
+:doctype: manpage
+
+NAME
+----
+myoiTargetSharedMallocTableRegister - Register the shared variables on the target side.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiTargetSharedMallocTableRegister(void *in_pAddrOfSVarTable, int in_NumEntry, int in_Ordered)*
+
+DESCRIPTION
+-----------
+ parameter: in_pAddrOfSVarTable start address of the shared varaible table,
+assuming it follows the format of MyoiMicSharedVarEntry.
+
+
+ parameter: in_NumEntry number of entry in the table.
+
+
+ parameter: in_Ordered whether the table ordered by name.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

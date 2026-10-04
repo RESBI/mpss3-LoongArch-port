@@ -1,0 +1,30 @@
+myoSemDestroy(3)
+================
+:doctype: manpage
+
+NAME
+----
+myoSemDestroy - Destroy the semaphore.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoSemDestroy(MyoSem in_Sem)*
+
+DESCRIPTION
+-----------
+ parameter: in_Sem the semaphore handle returned by myoSemCreate.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

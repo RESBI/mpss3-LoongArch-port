@@ -1,0 +1,94 @@
+
+/***
+* See http://sourceware.org/binutils/docs/ld/VERSION.html#VERSION for more info.
+* Use this in conjunction with coi_version_asm.h.
+* // Comments don't work in this file.
+***/
+
+COI_1.0
+{
+    global:
+        COIEngineGetHostname;
+        COIBufferAddRef;
+        COIBufferReleaseRefcnt;
+        COIBufferAddRefcnt;
+		COIBufferCopy;
+		COIBufferCopyEx;
+		COIBufferCreate;
+		COIBufferCreateFromMemory;
+		COIBufferCreateSubBuffer;
+		COIBufferDestroy;
+		COIBufferGetSinkAddress;
+		COIBufferGetSinkAddressEx;
+		COIBufferMap;
+		COIBufferRead;
+		COIBufferReleaseRef;
+		COIBufferSetState;
+		COIBufferUnmap;
+		COIBufferWrite;
+		COIBufferWriteEx;
+		COIBufferWriteMultiD;
+		COIBufferReadMultiD;
+		COIEngineGetCount;
+		COIEngineGetHandle;
+		COIEngineGetIndex;
+		COIEngineGetInfo;
+		COIEventRegisterUserEvent;
+		COIEventSignalUserEvent;
+		COIEventUnregisterUserEvent;
+		COIEventWait;
+        COIEventRegisterCallback;
+        COINotificationCallbackSetContext;
+        COIPerfGetCycleCounter;
+        COIPerfGetCycleFrequency;
+        COIPipelineClearCPUMask;
+        COIPipelineCreate;
+        COIPipelineDestroy;
+        COIPipelineGetEngine;
+        COIPipelineRunFunction;
+        COIPipelineSetCPUMask;
+        COIPipelineStartExecutingRunFunctions;
+        COIProcessCreateFromFile;
+        COIProcessCreateFromMemory;
+        COIProcessDestroy;
+        COIProcessGetFunctionHandles;
+        COIProcessLoadLibraryFromFile;
+        COIProcessLoadLibraryFromMemory;
+        COIProcessLoadSinkLibraryFromFile;
+        COIProcessProxyFlush;
+        COIProcessRegisterLibraries;
+        COIProcessUnloadLibrary;
+        COIProcessWaitForShutdown;
+        COIProcessSetCacheSize;
+        COIProcessConfigureDMA;
+        COIRegisterNotificationCallback;
+        COIResultGetName;
+        COISysGetAPICID;
+        COISysGetCoreCount;
+        COISysGetCoreIndex;
+        COISysGetHardwareThreadCount;
+        COISysGetHardwareThreadIndex;
+        COISysGetL2CacheCount;
+        COISysGetL2CacheIndex;
+        COIUnregisterNotificationCallback;
+
+        /*
+           White box testing requires the following
+           internal function to be visible.
+           It does some read-only stuff state checking,
+           we're OK with that.
+        */
+        _COI_INVARIANT;
+
+    /* Make all other symbols local */
+    local:
+        *;
+
+};
+
+COI_2.0
+{
+
+} COI_1.0;
+
+

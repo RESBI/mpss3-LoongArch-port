@@ -1,0 +1,85 @@
+COIPROCESSLOADLIBRARYFROMMEMORYV2(3)
+====================================
+:doctype: manpage
+
+NAME
+----
+COIProcessLoadLibraryFromMemoryV2 - Loads a shared library into the specified
+				  remote process.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessLoadLibraryFromMemory(COIPROCESS 'in_Process', const void*
+'\*in_pLibraryBuffer'*, uint64_t 'in_LibraryBufferLength', const char* '\*in_pLibraryName'*,
+const char* '\*in_LibrarySearchPath'*, const char* '\*in_FileOfOrigin'*,
+uint64_t 'in_FileOfOriginOffset', uint32_t 'in_Flags', COILIBRARY* '\*out_pLibrary'*);*
+
+DESCRIPTION
+-----------
+
+The *COIProcessLoadLibraryFromMemory*() call loads a shared library into
+the specified remote process, akin to using dlopen() on a local process
+in Linux or LoadLibrary() in Windows. Dependencies for this library that
+are not listed with absolute paths are searched for first in current
+working directory, then in the colon-delimited paths in the environment
+variable SINK_LD_LIBRARY_PATH, and finally on the sink in the standard
+search paths as defined by the sink's operating system / dynamic loader.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessLoadLibraryFromMemory*() call returns
+COI_SUCCESS indicating that library was successfully loaded otherwise;
+
+COI_INVALID_HANDLE if the process handle passed in was invalid.
+
+COI_OUT_OF_RANGE if in_LibraryBufferLength is 0.
+
+COI_INVALID_FILE if in_pLibraryBuffer does not represent a valid
+shared library file.
+
+COI_MISSING_DEPENDENCY if a dependent library is missing from
+either SINK_LD_LIBRARY_PATH or the in_LibrarySearchPath parameter.
+
+COI_ARGUMENT_MISMATCH if the shared library is missing an SONAME
+and in_pLibraryName is NULL.
+
+COI_ARGUMENT_MISMATCH if in_pLibraryName is the same as that of
+any of the dependencies (recursive) of the library being loaded.
+
+COI_ALREADY_EXISTS if there is an existing COILIBRARY handle
+that identifies this library, and this COILIBRARY hasn't been
+unloaded yet.
+
+COI_BINARY_AND_HARDWARE_MISMATCH if the target machine of the
+binary or any of its recursive dependencies does not match the
+engine associated with in_Process.
+
+COI_UNDEFINED_SYMBOL if we are unable to load the library due to
+an undefined symbol.
+
+COI_PROCESS_DIED if loading the library on the device caused
+the remote process to terminate.
+
+COI_DOES_NOT_EXIST if in_FileOfOrigin is not NULL and does not
+exist.
+
+COI_ARGUMENT_MISMATCH if in_FileOfOrigin is NULL and
+in_FileOfOriginOffset is not 0.
+
+COI_INVALID_FILE if in_FileOfOrigin is not a "regular file" as
+determined by stat or if its size is 0.
+
+COI_OUT_OF_RANGE if in_FileOfOrigin exists but its size is
+less than in_FileOfOriginOffset + in_BinaryBufferLength.
+
+COI_INVALID_POINTER if out_pLibrary or in_pLibraryBuffer are NULL.
+
+
+SEE ALSO
+--------
+*COIProcessLoadLibraryFromMemory(3)*

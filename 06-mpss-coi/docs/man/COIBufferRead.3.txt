@@ -1,0 +1,106 @@
+COIBUFFERREAD(3)
+================
+:doctype: manpage
+
+NAME
+----
+COIBufferRead - Copy data from a buffer into local memory.
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT COIBufferRead(
+                COIBUFFER 'in_SourceBuffer',
+                uint64_t 'in_Offset',
+                voidpass:[*] 'in_pDestData',
+                uint64_t 'in_Length',
+                COI_COPY_TYPE 'in_Type',
+                uint32_t 'in_NumDependencies',
+          const COIEVENTpass:[*] 'in_pDependencies',
+                COIEVENTpass:[*] 'out_pCompletion');*
+
+DESCRIPTION
+-----------
+The *COIBufferRead*() call copies data from a buffer into local memory.
+Please note that COIBufferRead does not follow implicit buffer
+dependencies. If a buffer is in use in a run function or has been added
+to a process using COIBufferAddRef the call to COIBufferRead will not
+wait, it will still copy data immediately.
+This is to facilitate a usage model where a buffer is being used outside
+of a run function, for example in a spawned thread, but data still needs
+to be transferred to or from the buffer.
+Additionally this means that if more than one DMA channel is enabled,
+(See COIProcessConfigureDMA) operations to the same buffer may
+happen in parallel if they can be assigned to different DMA hardware.
+So it is highly recommended to use explicit event dependencies to
+order operations where needed.
+
+
+_in_SourceBuffer_::
+        [in] Buffer to read from.
+
+_in_Offset_::
+        [in] Location in the buffer to start reading from.
+
+_in_pDestData_::
+        [in] A pointer to local memory that should be written into from
+        the provided buffer.
+
+_in_Length_::
+        [in] The number of bytes to write from in_SourceBuffer into
+        in_pDestData. Must not be larger than the size of in_SourceBuffer
+        and must not over run in_SourceBuffer if an in_Offset is provided.
+
+_in_Type_::
+        [in] The type of copy operation to use, one of either
+        COI_COPY_UNSPECIFIED, COI_COPY_USE_DMA, COI_COPY_USE_CPU.
+
+_in_NumDependencies_::
+        [in] The number of dependencies specified in the in_pDependencies
+        array. This may be 0 if the caller does not want the read call to
+        wait for any additional events to be signaled before starting the
+        read operation.
+
+_in_pDependencies_::
+        [in] An optional array of handles to previously created COIEVENT
+        objects that this read operation will wait for before starting.
+        This allows the user to create dependencies between buffer read
+        calls and other operations such as run functions and map calls. The
+        user may pass in NULL if they do not wish to wait for any
+        additional dependencies to complete before doing the read.
+
+_out_pCompletion_::
+        [out] An optional event to be signaled when the read has
+        completed. This event can be used as a dependency to order
+        the read with regard to future operations.
+        If no completion event is passed in then the read is
+        synchronous and will block until the transfer is complete.
+
+
+RETURN VALUE
+------------
+*COI_SUCCESS* if the buffer was copied successfully.
+
+*COI_INVALID_HANDLE* if the buffer handle was invalid.
+
+*COI_OUT_OF_RANGE* if in_Offset is beyond the end of the buffer.
+
+*COI_ARGUMENT_MISMATCH* if the in_pDependencies is non NULL but in_NumDependencies is 0.
+
+*COI_ARGUMENT_MISMATCH* if in_pDependencies is NULL but in_NumDependencies is not 0.
+
+*COI_NOT_SUPPORTED* if the source buffer is of type
+
+*COI_OUT_OF_RANGE* if in_Offset + in_Length exceeds the size of
+the buffer.
+
+*COI_OUT_OF_RANGE* if in_Length is 0.
+
+*COI_INVALID_POINTER* if the in_pDestData pointer is NULL.
+
+*COI_RETRY* if in_SourceBuffer is mapped and is not a COI_BUFFER_PINNED buffer or COI_BUFFER_OPENCL buffer.
+
+
+
+

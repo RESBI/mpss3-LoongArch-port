@@ -1,0 +1,27 @@
+COISYSGETCORECOUNT(3)
+=====================
+:doctype: manpage
+
+NAME
+----
+COISysGetCoreCount - Returns the number of cores exposed by the processor on which the caller
+ 	             is running.
+
+SYNOPSIS
+--------
+*#include <COISysInfo_common.h>*
+
+uint32_t COISysGetCoreCount(void);
+
+DESCRIPTION
+-----------
+The *COISysGetCoreCount*() call returns the number of cores exposed by the
+processor on which the caller is running.
+
+RETURN VALUE
+------------
+Upon successful completion, *COISysGetCoreCount*() call returns the number of
+cores exposed by the processor on which the caller is running; otherwise
+returns 0 if there is an error loading the processor info.
+
+

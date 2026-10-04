@@ -1,0 +1,26 @@
+# 构建产物（各包的 make 生成，不入库）
+*.o
+*.ko
+*.so
+*.so.*
+.*.cmd
+*.mod
+*.mod.c
+modules.order
+Module.symvers
+.tmp_versions/
+__pycache__/
+*.pyc
+miclib/objs/
+miclib/libs/
+build-tmp/
+build/
+bin/
+libscif.map
+mpssd/mpssd
+micctrl/micctrl
+micctrl/micctrl_passwd
+apps/mpssinfo/mpssinfo
+apps/mpssflash/mpssflash
+apps/micsmc/micsmc
+_miccheck/common/version.py

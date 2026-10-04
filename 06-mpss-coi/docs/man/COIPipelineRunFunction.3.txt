@@ -1,0 +1,99 @@
+COIPIPELINERUNFUNCTION(3)
+=========================
+:doctype: manpage
+
+NAME
+----
+COIPipelineRunFunction - Enqueues a function in the remote process binary to
+			 be executed.
+
+SYNOPSIS
+--------
+*#include <COIPipeline_source.h>*
+
+*COIRESULT COIPipelineRunFunction(COIPIPELINE 'in_Pipeline', COIFUNCTION 'in_Function', uint32_t
+'in_NumBuffers', const COIBUFFER* \*'in_pBuffers'*, const COI_ACCESS_FLAGS*
+\*'in_pBufferAccessFlags'*, uint32_t 'in_NumDependencies', const COIEVENT*
+\*'in_pDependencies'*, const void* \*'in_pMiscData'*, uint16_t
+'in_MiscDataLen', void* \*'out_pAsyncReturnValue'*, uint16_t
+'in_AsyncReturnValueLen', COIEVENT* \*'out_pCompletion'*);*
+
+DESCRIPTION
+-----------
+
+The *COIPipelineRunFunction*() call enqueues a function in the remote process binary to be
+executed. The function execution is asynchronous in regards to the Source and all run
+functions enqueued on a pipeline are executed in-order. The run function will only execute
+when all of the required buffers are present in the Sink's memory.
+
+Potential Hazards while using Runfunctions:
+
+1. Proper care has to be taken while setting the input dependencies for
+   RunFunctions. Setting it incorrectly can lead to cyclic dependencies
+   and can cause the respective pipeline (as a result Intel® Coprocessor
+   Offload Infrastructure (Intel® COI) Runtime) to stall.
+2. RunFunctions can also segfault if enough memory space is not available
+   on the sink for the buffers passed in. Pinned buffers and buffers that
+   are AddRef'd need to be accounted for available memory space. In other
+   words, this memory is not available for use until it is freed up.
+3. Unexpected segmentation faults or erroneous behavior can occur if
+   handles or data passed in to Runfunction gets destroyed before the
+   RunFunction finishes. For example, if a variable passed in as Misc data
+   or the buffer gets destroyed before the Intel® Coprocessor Offload Infrastructure
+   (Intel® COI) runtime receives the completion notification of the Runfunction,
+   it can cause unexpected behavior. So it is always recommended to wait for RunFunction
+   completion event before any related destroy event occurs.
+
+Intel® Coprocessor Offload Infrastructure (Intel® COI) Runtime expects
+users to handle such scenarios. COIPipelineRunFunction returns COI_SUCCESS
+for above cases because it was queued up successfully. Also if you try to
+destroy a pipeline with a stalled function then the destroy call will hang.
+COIPipelineDestroy waits until all the functions enqueued are finished executing.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIPipelineRunFunction*() returns COI_SUCCESS
+indicating the function was successfully placed in a pipeline for future execution.
+Note that the actual execution of the function will occur in the future.; otherwise
+
+COI_OUT_OF_RANGE if in_NumBuffers is greater than COI_PIPELINE_MAX_IN_BUFFERS or
+if in_MiscDataLen is greater than COI_PIPELINE_MAX_IN_MISC_DATA_LEN.
+
+COI_INVALID_HANDLE if the pipeline handle passed in was invalid.
+
+COI_INVALID_HANDLE if the function handle passed in was invalid.
+
+COI_INVALID_HANDLE if any of the buffers passed in are invalid.
+
+COI_ARGUMENT_MISMATCH if in_NumDependencies is non-zero while in_pDependencies
+was passed in as NULL.
+
+COI_ARGUMENT_MISMATCH if in_pDependencies is non-NULL but in_NumDependencies is zero.
+
+COI_ARGUMENT_MISMATCH if in_MiscDataLen is non-zero while in_pMiscData was passed
+in as NULL.
+
+COI_ARGUMENT_MISMATCH if in_pMiscData is non-NULL but in_MiscDataLen is zero.
+
+COI_ARGUMENT_MISMATCH if in_NumBuffers is non-zero and in_pBuffers or in_pBufferAccessFlags
+are NULL.
+
+COI_ARGUMENT_MISMATCH if in_pBuffers is non-NULL but in_NumBuffers is zero.
+
+COI_ARGUMENT_MISMATCH if in_pBufferAccessFlags is non-NULL but in_NumBuffers is zero.
+
+COI_ARGUMENT_MISMATCH if in_ReturnValueLen is non-zero while in_pReturnValue was
+passed in as NULL.
+
+COI_ARGUMENT_MISMATCH if in_pReturnValue is non-NULL but in_ReturnValueLen is zero.
+
+COI_RETRY if any input buffers, which are not pinned buffers, are still mapped when 
+passed to the run function.
+
+COI_MISSING_DEPENDENCY if buffer was not created on the process associated with the
+pipeline that was passed in.
+
+COI_OUT_OF_RANGE if any of the access flags in in_pBufferAccessFlags is not a valid
+COI_ACCESS_FLAGS.
+

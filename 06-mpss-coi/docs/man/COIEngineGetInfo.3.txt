@@ -1,0 +1,49 @@
+COIENGINEGETINFO(3)
+===================
+:doctype: manpage
+
+NAME
+----
+COIEngineGetInfo - Returns information related to a specified engine.
+
+SYNOPSIS
+--------
+*#include <COIEngine_source.h>*
+
+*COIRESULT COIEngineGetInfo(COIENGINE 'in_EngineHandle',
+                            uint32_t 'in_EngineInfoSize',
+                            COI_ENGINE_INFOpass:[*] 'out_pEngineInfo');*
+
+DESCRIPTION
+-----------
+Returns information related to a specified engine. Note that if the runtime
+is unable to query a value it will be returned as zero but the call will
+still succeed.
+
+_in_EngineHandle_::
+        [in] The COIENGINE structure as provided from COIEngineGetHandle()
+        which to query for device level information.
+
+_in_EngineInfoSize_::
+        [in] The size of the structure that out_pEngineInfo points to.
+        Used for version safety of the function call.
+
+_out_pEngineInfo_::
+        [out] The address of a user allocated COI_ENGINE_INFO structure.
+        Upon success, the contents of the structure will be updated
+        to contain information related to the specified engine.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIEngineGetInfo*() returns *COI_SUCCESS*
+otherwise:
+
+*COI_INVALID_HANDLE* if the in_EngineHandle handle is not valid.
+
+*COI_SIZE_MISMATCH* if in_EngineInfoSize does not match any current
+or previous COI_ENGINE_INFO structure sizes.
+
+*COI_INVALID_POINTER* if the out_pEngineInfo pointer is NULL.
+
+

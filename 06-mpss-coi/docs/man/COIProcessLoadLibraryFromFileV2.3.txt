@@ -1,0 +1,42 @@
+COIPROCESSLOADLIBRARYFROMFILEV2(3)
+==================================
+:doctype: manpage
+
+NAME
+----
+COIProcessLoadLibraryFromFileV2 - Loads a shared library into the specified
+				remote process.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessLoadLibraryFromFile(COIPROCESS 'in_Process', const char*
+'\*in_pFileName'*, const char* '\*in_pLibraryName'*,
+const char* '\*in_LibrarySearchPath'*, uint32_t 'in_Flags', COILIBRARY* '\*out_pLibrary'*);*
+
+DESCRIPTION
+-----------
+
+The *COIProcessLoadLibraryFromFile*() call loads a shared library into
+the specified remote process, akin to using dlopen() on a local process
+in Linux or LoadLibrary() in Windows. For more details, refer to
+*COIProcessLoadLibraryFromMemory*().
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessLoadLibraryFromFile*() call returns
+COI_SUCCESS indicating that library was successfully loaded otherwise;
+
+COI_INVALID_POINTER if in_pFileName is NULL.
+
+COI_DOES_NOT_EXIST if in_pFileName cannot be found.
+
+COI_INVALID_FILE if the file is not a valid shared library.
+
+
+SEE ALSO
+--------
+*COIProcessLoadLibraryFromMemory(3)*

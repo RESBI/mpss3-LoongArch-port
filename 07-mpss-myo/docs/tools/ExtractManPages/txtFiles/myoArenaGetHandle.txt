@@ -1,0 +1,37 @@
+myoArenaGetHandle(3)
+====================
+:doctype: manpage
+
+NAME
+----
+myoArenaGetHandle - Gets the arena handle of the arena that contains the memory
+space pointed to by "in_pPtr". This API can be used when it is
+not clear which arena handle should be used for other arena
+related APIs.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoArenaGetHandle(void *in_pPtr,
+MyoArena *out_pArena)*
+
+DESCRIPTION
+-----------
+ parameter: in_pPtr The start address of a chunk of memory space.
+
+
+ parameter: out_pArena Handle of the arena.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

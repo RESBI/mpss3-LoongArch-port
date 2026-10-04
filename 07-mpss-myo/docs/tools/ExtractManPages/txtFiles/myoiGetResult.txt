@@ -1,0 +1,30 @@
+myoiGetResult(3)
+================
+:doctype: manpage
+
+NAME
+----
+myoiGetResult - Wait till the remote call is done.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myoimpl.h>*
+
+*extern MyoError myoiGetResult(MyoiRFuncCallHandle in_Handle)*
+
+DESCRIPTION
+-----------
+ parameter: in_Handle handle of the remote call.
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

@@ -1,0 +1,209 @@
+COIBUFFERWRITEMULTID(3)
+=======================
+:doctype: manpage
+
+NAME
+----
+COIBufferWriteMultiD - Copy data from a multi-dimensional array in memory to
+    another multi-dimensional array in an existing COIBUFFER.
+
+
+SYNOPSIS
+--------
+*#include <COIBuffer_source.h>*
+
+*COIRESULT
+COIBufferWriteMultiD(
+            COIBUFFER 'in_DestBuffer',
+      const COIPROCESS 'in_DestProcess',
+            int64_t 'in_Offset',
+            struct arr_descpass:[*] 'in_DestArray',
+            struct arr_descpass:[*] 'in_SrcArray',
+            COI_COPY_TYPE 'in_Type', uint32_t 'in_NumDependencies',
+      const COIEVENTpass:[*] 'in_pDependencies',
+            COIEVENTpass:[*] 'out_pCompletion');*
+
+DESCRIPTION
+-----------
+Copy data specified by multi-dimensional array data structure from an
+existing COIBUFFER to another multi-dimensional array located in memory.
+Arrays with more than 3 dimensions are not supported.
+Different numbers of elements between source and destination are not supported.
+
+Please note that COIBufferReadMultiD does not follow implicit buffer
+dependencies. If a buffer is in use in a run function or has been added
+to a process using COIBufferAddRef the call to COIBufferReadMultiD will not
+wait, it will still copy data immediately.
+This is to facilitate a usage model where a buffer is being used outside
+of a run function, for example in a spawned thread, but data still needs
+to be transferred to or from the buffer.
+Additionally this means that if more than one DMA channel is enabled,
+(See COIProcessConfigureDMA) operations to the same buffer may
+happen in parallel if they can be assigned to different DMA hardware.
+So it is highly recommended to use explicit event dependencies to
+order operations where needed.
+
+_in_DestBuffer_::
+        [in] Buffer to write to.
+
+_in_DestProcess_::
+        [in] A pointer to the process to which the data will be written.
+        Buffer is updated only in this process and invalidated in other
+        processes. Only a single process can be specified.
+        Can be left NULL and default behavior will be chosen, which
+        chooses the first valid process in which regions are found. Other
+        buffer regions are invalidated if not updated.
+
+_in_Offset_::
+        [in] Offset of the first element of the array within the buffer.
+
+_in_DestArray_::
+        [in] A pointer to a data structure describing the structure of
+        the data array in the buffer. Total size must not be larger than
+        the size of in_DestBuffer. The base field of this structure will
+        be ignored.
+
+_in_SrcArray_::
+        [in] A pointer to a data structure describing the structure of
+        the data array in local memory that should be copied. in_SrcArray
+        and in_DestArry must have the same number of elements. The base
+        field of this structure should be the virtual pointer to the local
+        memory in which this array is located.
+
+_in_Type_::
+        [in] The type of copy operation to use, one of either
+        COI_COPY_UNSPECIFIED, COI_COPY_USE_DMA, COI_COPY_USE_CPU.
+
+_in_NumDependencies_::
+        [in] The number of dependencies specified in the in_pDependencies
+        array. This may be 0 if the caller does not want the write call to
+        wait for any additional events to be signaled before starting the
+        write operation.
+
+_in_pDependencies_::
+        [in] An optional array of handles to previously created COIEVENT
+        objects that this write operation will wait for before starting.
+        This allows the user to create dependencies between buffer write
+        calls and other operations such as run functions and map calls. The
+        user may pass in NULL if they do not wish to wait for any
+        additional dependencies to complete before doing the write.
+
+_out_pCompletion_::
+        [out] An optional event to be signaled when the write has
+        completed. This event can be used as a dependency to order
+        the write with regard to future operations.
+        If no completion event is passed in then the write is
+        synchronous and will block until the transfer is complete.
+
+The arr_desc structure is defined as follows:
+
+-------------------------
+struct arr_desc {
+    int64_t base;
+    int64_t rank;
+    dim_desc dim[3];
+};
+-------------------------
+
+_base_::
+        Virtual address at which the first element of the array is
+        located. This will be ignored in in_DestArray.
+
+_rank_::
+        The number of dimensions specified by array. Only up to 3
+        is supported.
+
+_dim_desc_::
+        An array of dim_desc structure, one for each dimension.
+        Note::: The dim_desc structures are in reverse significance order.
+        So for instance, in a array of rank 3, the first dimension, or "width",
+        will be at dim_desc[2], while the third dimension, or "depth",
+        will be at dim_desc[0];
+
+The dim_desc structure is defined as follows:
+
+----------------------------
+struct dim_desc {
+    int64_t size;
+    int64_t lindex;
+    int64_t lower;
+    int64_t upper;
+    int64_t stride;
+};
+----------------------------
+
+_size_::
+    Number of bytes in one element of the array.
+    Note::: In higher dimensions, this size is equal to the number of bytes
+    in one "row", or "slice" of the array.
+
+_lindex_::
+    Value of the base index. Default for C is 0.
+
+_lower_::
+    Index of the first element to copy.
+
+_upper_::
+    Describes the last element to copy, as defined by the following
+    formula
+    lower + (<index of last element to copy> * stride)
+
+_stride_::
+    Number of bytes between the start of each element and the start
+    of the next element divided by the size of each element.
+
+Examples of possible constructions:
+------------------------------------------------------------------
+int a1[100];
+int a2[100][100];
+
+a1[0:100]
+base=<addr>, rank=1
+dimension 0: size=4, lindex=0, lower=0, upper=99, stride=1
+
+a1[0:50:2]
+base=<addr>, rank=1
+dimension 0: size=4, lindex=0, lower=0, upper=98, stride=2
+
+a2[:][:]
+base=<addr>, rank=2
+dimension 0: size=400, lindex=0, lower=0, upper=99, stride=1
+dimension 1: size=4, lindex=0, lower=0, upper=99, stride=1
+
+a2[10:20:4][20:4:20]
+base=<addr>, rank=2
+dimension 0: size=400, lindex=0, lower=10, upper=86, stride=4
+dimension 1: size=4, lindex=0, lower=20, upper=80, stride=20
+------------------------------------------------------------------
+
+RETURN VALUE
+------------
+*COI_SUCCESS* if the buffer was written successfully.
+
+*COI_INVALID_HANDLE* if the buffer or process handle was invalid.
+
+*COI_OUT_OF_RANGE* if in_Offset is beyond the end of the buffer.
+
+*COI_ARGUMENT_MISMATCH* if the in_pDependencies is non NULL but
+         in_NumDependencies is 0.
+
+*COI_ARGUMENT_MISMATCH* if in_pDependencies is NULL but
+         in_NumDependencies is not 0.
+
+*COI_NOT_SUPPORTED* or dimension of destination or source arrays
+         are greater than 3 or less than 1
+
+*COI_INVALID_POINTER if the pointer in_SrcArray->base is NULL.
+
+*COI_OUT_OF_RANGE* if in_Offset + size of in_DestArray exceeds the
+         size of the buffer.
+
+*COI_OUT_OF_MEMORY* if any allocation of memory fails
+
+*COI_RETRY* if in_DestBuffer is mapped and is not a COI_BUFFER_PINNED
+         buffer or COI_BUFFER_OPENCL buffer.
+
+SEE ALSO
+--------
+*COIBufferReadMultiD(3)*
+

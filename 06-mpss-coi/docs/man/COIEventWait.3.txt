@@ -1,0 +1,59 @@
+COIEVENTWAIT(3)
+===============
+:doctype: manpage
+
+NAME
+----
+COIEventWait - Wait for an arbitrary number of COIEVENTs to be signaled as
+	       completed.
+
+
+SYNOPSIS
+--------
+*#include <COIEvent_source.h>*
+
+*COIRESULT COIEventWait(uint16_t 'in_NumEvent', const COIEVENT* \*'in_pEvents'*,
+int32_t 'in_TimeoutMilliseconds', uint_8 'in_WaitForAll', uint32_t*
+\*'out_pNumSignaled'*, uint32_t* \*'out_pSignaledIndices'*);*
+
+DESCRIPTION
+-----------
+The *COIEventWait*() call waits for an arbitrary number of COIEVENTs to be
+signaled as completed, eg when the run function or asynchronous map call
+associated with an event has finished execution.
+
+If the user sets in_WaitForAll = True and not all of the events are
+signaled when the timeout period is reached then COI_TIME_OUT_REACHED will
+be returned.
+
+If the user sets in_WaitForAll = False then if at least one event is
+signaled when the timeout is reached then COI_SUCCESS is returned.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIEventWait*() returns COI_SUCCESS indicating
+that event has been signaled completed; otherwise
+
+COI_TIME_OUT_REACHED if the events are still in use when the
+timeout is reached or timeout is zero (a poll).
+
+COI_OUT_OF_RANGE if a negative value other than -1 is passed in to
+the in_Timeout parameter.
+
+COI_OUT_OF_RANGE if in_NumEvents is 0.
+
+COI_INVALID_POINTER if in_pEvents is NULL.
+
+COI_ARGUMENT_MISMATCH if in_NumEvents > 1 and if in_WaitForAll
+is not true and out_pSignaled or out_pSignaledIndicies are NULL.
+
+COI_ARGUMENT_MISMATCH if out_pNumSignaled is not NULL
+and out_pSignaledIndices is NULL (or vice versa).
+
+COI_EVENT_CANCELED if while waiting on a user event, it gets
+unregistered this returns COI_EVENT_CANCELED
+
+COI_PROCESS_DIED if the remote process died. See COIProcessDestroy
+for more details.
+

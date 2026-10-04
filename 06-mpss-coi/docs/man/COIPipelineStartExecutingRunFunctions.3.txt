@@ -1,0 +1,27 @@
+COIPIPELINESTARTEXECUTINGRUNFUNCTIONS(3)
+========================================
+:doctype: manpage
+
+NAME
+----
+COIPipelineStartExecutingRunFunctions - Start processing pipelines on the
+					Sink.
+
+SYNOPSIS
+--------
+*#include <COIPipeline_sink.h>*
+
+*COIRESULT COIPipelineStartExecutingRunFunctions();*
+
+DESCRIPTION
+-----------
+The *COIPipelineStartExecutingRunFunctions*() start processing pipelines on
+the Sink. This should be done after any required initialization in the Sink's
+application has finished. No run functions will actually be executed
+(although they may be queued) until this function is called.
+
+RETURN VALUE
+------------
+*COIPipelineStartExecutingRunFunctions*() returns COI_SUCCESS if the pipelines
+were successfully started.
+

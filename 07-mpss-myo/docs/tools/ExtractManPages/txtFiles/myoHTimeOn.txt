@@ -1,0 +1,31 @@
+myoHTimeOn(3)
+=============
+:doctype: manpage
+
+NAME
+----
+myoHTimeOn - Toggle MYO HTime report feature on/off.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern MyoError myoHTimeOn(int in_On)*
+
+DESCRIPTION
+-----------
+ parameter: in_On: 1 turn on MYO HTime report
+0 turn off MYO HTime report
+
+
+
+RETURN VALUE
+------------
+
+MYO_SUCCESS; or
+an error number to indicate the error.
+
+

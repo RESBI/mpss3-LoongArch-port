@@ -1,0 +1,63 @@
+COIPROCESSGETFUNCTIONHANDLES(3)
+===============================
+:doctype: manpage
+
+NAME
+----
+COIProcessGetFunctionHandles - Given a loaded native process, gets an array of function
+			       handles that can be used to schedule run functions on a
+			       pipeline associated with that process.
+
+
+SYNOPSIS
+--------
+*#include <COIProcess_source.h>*
+
+*COIRESULT COIProcessGetFunctionHandles(COIPROCESS 'in_Process', uint32_t
+'in_NumFunctions', const char* '\*\*in_ppFunctionNameArray'*, COIFUNCTION* \*'out_pFunctionHandleArray'*);*
+
+DESCRIPTION
+-----------
+
+Given a loaded native process, the *COIProcessGetFunctionHandles*() call
+gets an array of function handles that can be used to schedule run functions
+on a pipeline associated with that process. See the documentation for
+COIPipelineRunFunction() for additional information. All functions that
+are to be retrieved in this fashion must have the define COINATIVEPROCESSEXPORT
+preceding their type specification. For functions that are written in C++,
+either the entries in in_pFunctionNameArray in must be pre-mangled, or the
+functions must be declared as extern "C". It is also necessary to link the
+binary containing the exported functions with the -rdynamic linker flag.
+It is possible for this call to successfully find function handles for
+some of the names passed in but not all of them. If this occurs COI_DOES_NOT_EXIST
+will return and any handles not found will be returned as NULL.
+
+
+RETURN VALUE
+------------
+
+Upon successful completion, *COIProcessGetFunctionHandles*() call returns
+COI_SUCCESS indicating that all function names indicated are found otherwise;
+
+COI_INVALID_HANDLE if the in_Process handle passed in was invalid.
+
+COI_OUT_OF_RANGE if in_NumFunctions is zero.
+
+COI_INVALID_POINTER if the in_ppFunctionNameArray or out_pFunctionHandleArray
+pointers was NULL.
+
+COI_DOES_NOT_EXIST if one or more function names were not
+found. To determine the function names that were not found, check which
+elements in the out_pFunctionHandleArray are set to NULL.
+
+COI_OUT_OF_RANGE if any of the null-terminated strings passed in
+via in_ppFunctionNameArray were more than
+COI_MAX_FUNCTION_NAME_LENGTH characters in length including
+the null.
+
+NOTE
+----
+This operation can take several milliseconds so it is recommended
+that it only be done at load time.
+
+

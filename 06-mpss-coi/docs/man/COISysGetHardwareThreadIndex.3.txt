@@ -1,0 +1,28 @@
+COISYSGETHARDWARETHREADINDEX(3)
+===============================
+:doctype: manpage
+
+NAME
+----
+COISysGetHardwareThreadIndex - return the index of the hardware thread on
+			       which the caller is running.
+
+
+SYNOPSIS
+--------
+*#include <COISysInfo_common.h>*
+
+uint32_t COISysGetHardwareThreadIndex(void);
+
+DESCRIPTION
+-----------
+The *COISysGetHardwareThreadIndex*() call returns the index of the hardware
+thread on which the caller is running. The indexes of neighboring hardware threads will differby a value of one and are within the range zero through COISysGetHardwareThreadCount()-1.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COISysGetHardwareThreadIndex*() call returns the index of the hardware thread on which the caller is running; otherwise
+returns ((uint32_t)-1) if there is an error loading the processor info.
+
+

@@ -1,0 +1,49 @@
+COIENGINEGETHANDLE(3)
+=====================
+:doctype: manpage
+
+NAME
+----
+COIEngineGetHandle - Returns the handle of a user specified engine.
+
+SYNOPSIS
+--------
+*#include <COIEngine_source.h>*
+
+*COIRESULT COIEngineGetHandle(COI_DEVICE_TYPE 'in_DeviceType',
+                              uint32_t 'in_EngineIndex',
+                              COIENGINEpass:[*] 'out_pEngineHandle');*
+
+DESCRIPTION
+-----------
+The *COIEngineGetHandle*() call returns the handle of a user specified engine.
+
+_in_DeviceType_::
+        [in] Specifies the device type of the engine requested.
+
+_in_EngineIndex_::
+        [in] A unsigned integer which specifies the zero-based position of
+        the engine in a collection of engines. The makeup of this
+        collection is defined by the in_DeviceType parameter.
+
+_out_pEngineHandle_::
+        [out] The address of a COIENGINE handle.
+
+
+RETURN VALUE
+------------
+Upon successful completion, *COIEngineGetHandle*() returns *COI_SUCCESS*
+otherwise:
+
+*COI_DOES_NOT_EXIST* if the in_DeviceType parameter is not valid.
+
+*COI_OUT_OF_RANGE* if in_EngineIndex is greater than or equal to
+the number of engines that match the in_DeviceType parameter.
+
+*COI_INVALID_POINTER* if the out_pEngineHandle parameter is NULL.
+
+*COI_VERSION_MISMATCH* if the version of the runtime on the host is not
+        compatible with the version on the device.
+
+*COI_NOT_INITIALIZED* if the engine requested exists but is offline.
+

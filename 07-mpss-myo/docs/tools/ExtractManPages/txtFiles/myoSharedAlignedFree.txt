@@ -1,0 +1,28 @@
+myoSharedAlignedFree(3)
+=======================
+:doctype: manpage
+
+NAME
+----
+myoSharedAlignedFree - Frees the memory space allocated by myoArenaAlignedMalloc
+to the default arena.
+
+
+
+
+SYNOPSIS
+--------
+*#include <myo.h>*
+
+*extern void  myoSharedAlignedFree(void *in_pPtr)*
+
+DESCRIPTION
+-----------
+ parameter: in_pPtr The start address of the specified memory space,
+which must be returned by myoArenaAlignedMalloc.
+
+
+
+RETURN VALUE
+------------
+void
