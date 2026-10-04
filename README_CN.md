@@ -136,6 +136,8 @@ sudo ip addr add 171.31.1.1/24 dev mic0 && sudo ip link set mic0 up
 micctrl --status                 # 期望：mic0: online (mode: linux image: ...)
 mpssinfo                         # 读卡的 SKU／序列号／核数／温度／Flash 版本等
 miccheck                         # 自检；全绿时输出 Status: OK
+sudo miccheck                    # 想看全绿就用 root 跑：其中「ras daemon 可用」一项走 SCIF，
+                                 # 需要打开 root 独占的 /dev/mic/scif，普通用户会看到该项 fail
 ssh root@171.31.1.2              # 卡的地址；卡端镜像已含授权密钥
 ```
 

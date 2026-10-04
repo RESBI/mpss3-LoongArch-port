@@ -136,6 +136,8 @@ The driver creates `mic0` (MTU 64512) when the card reaches the `online` state.
 micctrl --status                 # expect: mic0: online (mode: linux image: ...)
 mpssinfo                         # card SKU, serial, core count, temperature, flash version, ...
 miccheck                         # self-test; prints "Status: OK" when everything passes
+sudo miccheck                    # run as root for a full pass: the "ras daemon available"
+                                 # check goes over SCIF and needs the root-only /dev/mic/scif
 ssh root@171.31.1.2              # the card's address; the boot image already carries authorized keys
 ```
 

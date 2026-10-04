@@ -34,10 +34,13 @@ install: build
 	install -d $(STAGE)/bin $(STAGE)/src/miccheck
 	install -m755 bin/miccheck.py $(STAGE)/bin/miccheck
 	sed -i '1s|.*|#!/usr/bin/env python3|' $(STAGE)/bin/miccheck
+	# 移植版：上游靠 PyInstaller 打成单文件，这里装的是脚本，必须自己把模块目录
+	# 加进 sys.path（否则报 Could not import _miccheck）
+	sed -i '1a import sys; sys.path.insert(0, "$(PREFIX)/src/miccheck")' $(STAGE)/bin/miccheck
 	rm -rf $(STAGE)/src/miccheck/_miccheck
 	cp -r _miccheck $(STAGE)/src/miccheck/
-	@echo "已安装 miccheck -> $(STAGE)/bin/miccheck（模块在 $(STAGE)/src/miccheck）"
-	@echo "用法：PYTHONPATH=$(PREFIX)/src/miccheck python3 $(PREFIX)/bin/miccheck"
+	@echo "已安装 miccheck -> $(STAGE)/bin/miccheck（模块在 $(STAGE)/src/miccheck，启动器已带搜索路径）"
+	@echo "用法：直接 miccheck；需要覆盖时也可 PYTHONPATH=... miccheck"
 
 clean:
 	-$(MAKE) -f Makefile.mpss clean
