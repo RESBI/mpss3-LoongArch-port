@@ -115,30 +115,32 @@ sudo sed -i 's|^BootOnStart .*|BootOnStart Enabled|' /etc/mpss/mic0.conf
 
 ### 3.4 起守护进程
 
-　　用 systemd 时，写一个 `Type=simple` 的单元（**不要用 `Type=forking`**：`mpssd` 默认 fork 之后父进程会 `pause()` 永不退出，`forking` 必然超时）：
+　　单元随 `03-mpss-daemon` 一起安装到 `/usr/lib/systemd/system/mpss.service`，安装时自动执行 `systemctl daemon-reload` 与 `systemctl enable mpss`（内核模块已加载的话还会顺手把服务拉起来），所以**正常不需要手写单元**。确认一下即可：
+
+```bash
+systemctl status mpss
+```
+
+　　单元内容如下，供参考。关键点是 `Type=simple` —— **不能用 `Type=forking`**：`mpssd` 默认会 fork，然后父进程调用 `pause()` 永不退出（`mpssd/mpssd.c` 的 `main`），用 `forking` 时 systemd 会一直等 PIDFile、最终报 `start operation timed out`。`-l` 让它留在前台、日志进 journal，正好配合 `simple`：
 
 ```ini
-# /etc/systemd/system/mpss.service
 [Unit]
 Description=Intel(R) MPSS control service (LoongArch port)
 After=network.target
+Wants=systemd-modules-load.service
 
 [Service]
 Type=simple
-# 模块由 modules-load.d 在启动早期加载；这一行是双保险（已加载时 modprobe 直接成功）
 ExecStartPre=-/usr/sbin/modprobe mic
 ExecStart=/usr/sbin/mpssd -l
+Restart=no
 TimeoutSec=60
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-```bash
-sudo systemctl daemon-reload && sudo systemctl enable --now mpss
-```
-
-　　不用 systemd 时直接 `sudo /usr/sbin/mpssd -l &` 亦可（`-l` 是前台、日志到屏幕）。
+　　若 `/etc/systemd/system/mpss.service` 已存在（例如早先手工建的），它会**覆盖**随包的那份；想统一来源就删掉手工那份再 `systemctl daemon-reload`。不用 systemd 时直接 `sudo /usr/sbin/mpssd -l &` 亦可（`-l` 是前台、日志到屏幕）。
 
 ### 3.5 主机侧网口
 

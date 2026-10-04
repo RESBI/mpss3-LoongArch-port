@@ -54,8 +54,26 @@ install: build
 	install -m644 libmpssconfig/libmpsscommon.h $(STAGE)/include/mic/libmpsscommon.h
 	install -m755 mpssd/mpssd $(STAGE)/sbin/mpssd
 	install -m4755 micctrl/micctrl $(STAGE)/sbin/micctrl
+	install -d $(STAGE)/lib/systemd/system
+	install -m644 mpss.service $(STAGE)/lib/systemd/system/mpss.service
 	@if [ -z "$(DESTDIR)" ]; then ldconfig; fi
-	@echo "已安装 libmpssconfig / mpssd / micctrl（micctrl 带 setuid 位）-> $(STAGE)"
+	@echo "已安装 libmpssconfig / mpssd / micctrl（setuid）-> $(STAGE)"
+	@echo "        systemd 单元 -> $(STAGE)/lib/systemd/system/mpss.service"
+	@if [ -z "$(DESTDIR)" ]; then \
+		systemctl daemon-reload 2>/dev/null || true; \
+		if systemctl enable mpss >/dev/null 2>&1; then \
+			echo "        已 enable mpss.service（开机自启）"; \
+			if [ -d /sys/class/mic ]; then \
+				systemctl restart mpss >/dev/null 2>&1 || true; \
+				echo "        内核模块已在，服务状态：$$(systemctl is-active mpss)"; \
+			else \
+				echo "        内核模块尚未加载，加载后执行 systemctl start mpss"; \
+			fi; \
+		else \
+			echo "        未能自动 enable，请手工 systemctl enable --now mpss"; \
+		fi; \
+	fi
+	@echo "        注：早先手工放在 /etc/systemd/system/ 的同名单元会覆盖本文件"
 
 clean:
 	-$(MAKE) -f Makefile.mpss clean

@@ -115,30 +115,32 @@ sudo sed -i 's|^BootOnStart .*|BootOnStart Enabled|' /etc/mpss/mic0.conf
 
 ### 3.4 Start the daemon
 
-Under systemd, use a `Type=simple` unit. **Do not use `Type=forking`**: `mpssd` forks and then has the parent call `pause()` forever, so systemd would always time out.
+The unit ships with `03-mpss-daemon` and is installed to `/usr/lib/systemd/system/mpss.service`; the install also runs `systemctl daemon-reload` and `systemctl enable mpss` (and starts it if the kernel module is already loaded). So **you do not normally write a unit yourself** — just check it:
+
+```bash
+systemctl status mpss
+```
+
+For reference, the unit looks like this. The essential point is `Type=simple` — **do not use `Type=forking`**: `mpssd` forks and then has the parent call `pause()` forever (see `mpssd/mpssd.c`, `main`), so with `forking` systemd would wait for a PID file and eventually report `start operation timed out`. The `-l` flag keeps the daemon in the foreground with its log going to the journal, which pairs correctly with `simple`:
 
 ```ini
-# /etc/systemd/system/mpss.service
 [Unit]
 Description=Intel(R) MPSS control service (LoongArch port)
 After=network.target
+Wants=systemd-modules-load.service
 
 [Service]
 Type=simple
-# The module is loaded early at boot via modules-load.d; this line is belt and braces.
 ExecStartPre=-/usr/sbin/modprobe mic
 ExecStart=/usr/sbin/mpssd -l
+Restart=no
 TimeoutSec=60
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-```bash
-sudo systemctl daemon-reload && sudo systemctl enable --now mpss
-```
-
-Without systemd, `sudo /usr/sbin/mpssd -l &` works just as well — `-l` keeps it in the foreground and logs to the terminal.
+If `/etc/systemd/system/mpss.service` already exists (for instance one you wrote by hand earlier), it **takes precedence** over the packaged copy; delete the hand-written one and run `systemctl daemon-reload` if you want a single source of truth. Without systemd, `sudo /usr/sbin/mpssd -l &` works just as well — `-l` keeps it in the foreground and logs to the terminal.
 
 ### 3.5 Bring up the host-side interface
 
