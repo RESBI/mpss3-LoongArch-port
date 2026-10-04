@@ -142,13 +142,29 @@ WantedBy=multi-user.target
 
 If `/etc/systemd/system/mpss.service` already exists (for instance one you wrote by hand earlier), it **takes precedence** over the packaged copy; delete the hand-written one and run `systemctl daemon-reload` if you want a single source of truth. Without systemd, `sudo /usr/sbin/mpssd -l &` works just as well — `-l` keeps it in the foreground and logs to the terminal.
 
-### 3.5 Bring up the host-side interface
+### 3.5 The host-side interface: who brings it up and gives it an address
+
+Two separate things are involved here:
+
+- **Creating `mic0`** is the job of the host kernel module `mic.ko`: as soon as the card's virtio-net device appears, the driver creates the interface. That part is automatic — which is why `mic0` shows up on its own, but DOWN and with no address.
+- **Bringing it up and assigning an address** is not the driver's job. On the MPSS side this corresponds to `modhost=` in the `Network` line of `mic0.conf`: with `modhost=yes`, MPSS edits the *host's* network configuration (Debian's `/etc/network/interfaces`, or Red Hat `ifcfg-*` files). Distributions such as AOSC OS have neither, so this release pairs `modhost=no` with its own mechanism.
+
+`08-mic-module` installs `mic0-net.service` and `/usr/libexec/mpss/mic0-up.sh` for exactly that: when `mic0` appears — triggered either by the device unit `sys-subsystem-net-devices-mic0.device` or by a udev rule — the script reads the address and MTU from the `Network` line of `/etc/mpss/mic0.conf` and applies them, so MPSS configuration stays the single source of truth. The unit is enabled during installation; you can also run the script by hand:
 
 ```bash
-sudo ip addr add 171.31.1.1/24 dev mic0 && sudo ip link set mic0 up
+sudo /usr/libexec/mpss/mic0-up.sh --dry-run   # show what it would do (prints only)
+sudo /usr/libexec/mpss/mic0-up.sh             # apply it
+ip -br addr show mic0                         # expect: UP with 171.31.1.1/24
 ```
 
-The driver creates `mic0` (MTU 64512) when the card reaches the `online` state.
+If you would rather have NetworkManager handle it (that is what AOSC OS uses), disable the unit first — running both will fight over the interface:
+
+```bash
+sudo systemctl disable --now mic0-net.service
+sudo nmcli connection add type ethernet ifname mic0 con-name mic0 \
+     ipv4.method manual ipv4.addresses 171.31.1.1/24 ipv6.method disabled
+sudo nmcli connection up mic0
+```
 
 ## 4. Verifying the Installation
 

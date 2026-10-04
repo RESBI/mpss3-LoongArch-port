@@ -142,13 +142,29 @@ WantedBy=multi-user.target
 
 　　若 `/etc/systemd/system/mpss.service` 已存在（例如早先手工建的），它会**覆盖**随包的那份；想统一来源就删掉手工那份再 `systemctl daemon-reload`。不用 systemd 时直接 `sudo /usr/sbin/mpssd -l &` 亦可（`-l` 是前台、日志到屏幕）。
 
-### 3.5 主机侧网口
+### 3.5 主机侧网口：谁负责 up 与配地址
+
+　　这里要分清两件事：
+
+- **创建 `mic0`**：由主机内核模块 `mic.ko` 完成 —— 卡上的 virtio-net 设备一出现，驱动就把这个网口建出来。这一步是自动的，所以 `mic0` 会自己出现（但默认是 DOWN、没有地址）。
+- **把网口 up 起来并配 IP**：不是驱动的事。MPSS 侧对应 `mic0.conf` 里 `Network` 行的 `modhost=` —— `modhost=yes` 时它去改**主机**的网络配置（Debian 的 `/etc/network/interfaces`，或 Red Hat 的 `ifcfg-*`）；AOSC 这类发行版没有那些文件，所以本发布版按 `modhost=no` 给出配套方案。
+
+　　随 `08-mic-module` 安装的 `mic0-net.service` 与 `/usr/libexec/mpss/mic0-up.sh` 就干这件事：`mic0` 一出现（由设备单元 `sys-subsystem-net-devices-mic0.device` 或 udev 规则触发），脚本就把地址与 MTU 从 `/etc/mpss/mic0.conf` 的 `Network` 行读出来配上 —— 保持与 MPSS 配置单一来源，不另设一份。安装时已自动 enable，也可以手工执行：
 
 ```bash
-sudo ip addr add 171.31.1.1/24 dev mic0 && sudo ip link set mic0 up
+sudo /usr/libexec/mpss/mic0-up.sh --dry-run   # 先看它要做什么（只打印，不动网络）
+sudo /usr/libexec/mpss/mic0-up.sh             # 真正配置
+ip -br addr show mic0                         # 期望：UP 且带 171.31.1.1/24
 ```
 
-　　`mic0` 由驱动在卡进入 `online` 时创建（MTU 64512）。
+　　若更愿意交给 NetworkManager（AOSC 默认用它），先禁掉上面那个单元、再建连接 —— 两者同时配会互相覆盖：
+
+```bash
+sudo systemctl disable --now mic0-net.service
+sudo nmcli connection add type ethernet ifname mic0 con-name mic0 \
+     ipv4.method manual ipv4.addresses 171.31.1.1/24 ipv6.method disabled
+sudo nmcli connection up mic0
+```
 
 ## 四、验证
 

@@ -1,0 +1,29 @@
+# ============================================================================
+# 把主机侧 mic0 网口 up 起来（Xeon Phi / MPSS）
+#
+# 随 08-mic-module 安装到 /usr/lib/systemd/system/mic0-net.service。
+#
+# 触发方式：WantedBy 的是「设备单元」sys-subsystem-net-devices-mic0.device，
+# 因此 mic0 一出现（mic.ko 加载、卡引导到网络就绪）本单元就被拉起，
+# 不会拖慢正常开机，也不需要等固定的秒数。
+#
+# 地址不写死在这里：脚本 /usr/libexec/mpss/mic0-up.sh 从 /etc/mpss/mic0.conf
+# 的 Network 行读 hostip / netbits / mtu，保持与 MPSS 配置单一来源。
+#
+# 如果你更愿意交给 NetworkManager 管（本机 AOSC 就是 NM），就别 enable 本单元，
+# 改用 nmcli 建一个 mic0 连接；两者同时配会互相覆盖。
+# ============================================================================
+
+[Unit]
+Description=Bring up the mic0 host interface (Xeon Phi / MPSS)
+BindsTo=sys-subsystem-net-devices-mic0.device
+After=sys-subsystem-net-devices-mic0.device
+After=mpss.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/mpss/mic0-up.sh
+
+[Install]
+WantedBy=sys-subsystem-net-devices-mic0.device

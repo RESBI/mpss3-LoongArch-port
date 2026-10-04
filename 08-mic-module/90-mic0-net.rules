@@ -1,0 +1,11 @@
+# ============================================================================
+# mic0 网口出现时拉起 mic0-net.service（Xeon Phi / MPSS）
+#
+# 随 08-mic-module 安装到 /usr/lib/udev/rules.d/90-mic0-net.rules。
+#
+# 单元本身已经用 WantedBy=sys-subsystem-net-devices-mic0.device 声明了「设备出现即启动」，
+# 这条 udev 规则是另一条更古老也更通用的触发路径（TAG+="systemd" + SYSTEMD_WANTS），
+# 两者都装上，谁先生效都行 —— 服务是 oneshot + RemainAfterExit，重复触发无副作用。
+# ============================================================================
+
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="mic0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="mic0-net.service"

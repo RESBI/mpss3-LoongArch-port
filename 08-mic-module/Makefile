@@ -35,10 +35,32 @@ install: build
 		prefix=$(PREFIX) sysconfdir=/etc INSTALL_MOD_PATH=$(DESTDIR) DESTDIR=$(DESTDIR)
 	install -d $(DESTDIR)$(SYSCONFDIR)/modules-load.d
 	install -m644 mic.modules-load $(DESTDIR)$(SYSCONFDIR)/modules-load.d/mic.conf
+	install -d $(STAGE)/libexec/mpss $(STAGE)/lib/systemd/system
+	install -m755 mic0-up.sh $(STAGE)/libexec/mpss/mic0-up.sh
+	install -m644 mic0-net.service $(STAGE)/lib/systemd/system/mic0-net.service
+	install -d $(STAGE)/lib/udev/rules.d
+	install -m644 90-mic0-net.rules $(STAGE)/lib/udev/rules.d/90-mic0-net.rules
 	@if [ -z "$(DESTDIR)" ]; then depmod -a $(KERNEL_VERSION); fi
 	@echo "已安装 mic.ko -> /lib/modules/$(KERNEL_VERSION)/"
 	@echo "  配置：$(SYSCONFDIR)/modprobe.d/mic.conf、$(SYSCONFDIR)/udev/rules.d/50-udev-mic.rules"
 	@echo "        $(SYSCONFDIR)/modules-load.d/mic.conf（开机自动 modprobe mic）"
+	@echo "        $(STAGE)/lib/systemd/system/mic0-net.service + $(STAGE)/libexec/mpss/mic0-up.sh（mic0 出现即 up 并配地址）"
+	@if [ -z "$(DESTDIR)" ]; then \
+		systemctl daemon-reload 2>/dev/null || true; \
+		udevadm control --reload-rules 2>/dev/null || true; \
+		if systemctl enable mic0-net.service >/dev/null 2>&1; then \
+			echo "        已 enable mic0-net.service"; \
+			if [ -e /sys/class/net/mic0 ]; then \
+				systemctl start mic0-net.service >/dev/null 2>&1 || true; \
+				echo "        mic0 已在，当前：$$(ip -br addr show mic0 2>/dev/null | tr -s ' ')"; \
+			else \
+				echo "        mic0 尚未创建，等它出现时由设备单元自动拉起"; \
+			fi; \
+		else \
+			echo "        （未能自动 enable，可手工 systemctl enable --now mic0-net.service）"; \
+		fi; \
+	fi
+	@echo "        注：若用 NetworkManager 管 mic0，请先 systemctl disable mic0-net.service 以免互相覆盖"
 
 clean:
 	-$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) clean
