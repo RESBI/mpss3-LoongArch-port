@@ -4,3 +4,7 @@
 *.gz         binary
 bzImage-*    binary
 *.jpg        binary
+
+# 源码与文档统一 LF：主线（Linux 内核）风格；历史上曾有 3 个文件以 CRLF 入库，
+# 导致它们的每次 diff 都变成整文件重写。此处显式声明，防止再犯。
+* text=auto eol=lf
