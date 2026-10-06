@@ -10,6 +10,39 @@
 
 ---
 
+## 客户端支持矩阵（原生 Intel Xeon Phi 的用法 → 本移植的现状）
+
+　　「已支持」一列：✅ 已在真机验收（阶段号见[附录 J](docs/J-acceptance-tests_CN.md)）／❌ 尚未迁移或未验证。备注一列说明**用法是否与原生平台（x86_64 MPSS 工具链）一致**：标「一致」表示客户端代码无需改动；标「等价」表示用法有差异，但已提供**同等价值的 API/中间层**（或明确的替代写法）。
+
+| 客户端项目 | 已支持 | 备注 |
+|---|:---:|---|
+| 内核模块加载（`modprobe mic`、`mpssd` 起服务） | ✅ | **一致**：`make install` + `modprobe`，已装 udev 权限规则让普通用户可用（T0/T1） |
+| 卡引导与上线（`micctrl -b`、卡进 `online`） | ✅ | **一致**：与原生同样的 `micctrl` 流程（T1） |
+| 管理工具（`micctrl`／`miccheck`／`mpssinfo`／`mpssflash`／`mpssd`） | ✅ | **一致**：命令与输出格式保持原样（T0/T1） |
+| 图形管理界面（`micsmc` GUI） | ❌ | 只编译未运行验证；如需使用请先按[附录 E](docs/E-porting-patches_CN.md) 复核依赖 |
+| 宿主用户态 SCIF 库（`libscif`） | ✅ | **一致**：`scif_*` 27 个 API 语义不变（T3；规则见[附录 L](docs/L-api-determinism-rules_CN.md)） |
+| 宿主 COI 库（`libcoi_host`）与卡端 `coi_daemon` | ✅ | **等价**：进程/流水线/事件 API 一致；**大缓冲 `COIBufferCreate` 在本移植不可用**（`COI_OUT_OF_MEMORY`），改用「小参数进 + 卡端自分配」模式（T5/T6/T7） |
+| 卡端 SSH 登录与部署 | ✅ | **一致**：`ssh mic0`、`scp` 投送、卡端执行（T2） |
+| 宿主 ↔ 卡共享内存式 RMA（`scif_register`/`writeto`） | ✅ | **一致**：API 不变；新增窗口/单次长度约束（窗口 ≤1 MiB、单次 ≤1 MiB），见[附录 K](docs/K-offload-memory-rules_CN.md) |
+| COI 端到端 offload（建进程 → 跑卡端函数 → 取回结果） | ✅ | **等价**：与原生相同的 COI 调用序列（T5），示例见[附录 F](docs/F-coi-and-openmp_CN.md) |
+| `#pragma offload target(mic)`（Intel LEO 语法） | ✅ | **等价**：源级语法不变；宿主侧需自建 `libgomp`/`liboffloadmic` 运行库并配 k1om 交叉工具链（[附录 H](docs/H-offload-field-notes_CN.md)、[F](docs/F-coi-and-openmp_CN.md)） |
+| 卡端 OpenMP（`libgomp` on KNC） | ✅ | **等价**：`omp_set_num_threads(240)` 等用法一致；卡端 kernel 的**优化档需逐源码实测**（附录 J 第 2 条） |
+| k1om 交叉编译（`k1om-mpss-linux-gcc`、`-mmic` 目标） | ✅ | **一致**：用 Intel 原厂 k1om 工具链；注意须自行搭建 sysroot（附录 H） |
+| 卡镜像定制（initramfs 重制、`09-boot-images`） | ✅ | **一致**：与原生相同的 cpio/镜像流程（[附录 E](docs/E-porting-patches_CN.md)） |
+| `mic0` 宿主网口自动就绪 | ✅ | **一致**：开机自动 up（提交 `9b6d9e6`） |
+| 卡端内核模块（卡上的 `micscif.ko`） | ✅ | **一致**：沿用原厂模块即可；**重建路径存在工具链障碍**，已记为可选方案（[附录 K](docs/K-offload-memory-rules_CN.md) K.6） |
+| 非 root 使用（设备权限、`RLIMIT_MEMLOCK`） | ✅ | **一致**：`/dev/mic/scif` 0666 + udev 规则（T1）；pin 上限仍受 `ulimit -l` 约束 |
+| 宿主页大小适配（4/16/64 KiB 内核） | ✅ | **等价**：对 4 KiB 宿主退化为原生行为；16 KiB 为本机实测（[附录 M](docs/M-portability-and-compatibility_CN.md)） |
+| OpenCL（卡端 OpenCL 运行时） | ❌ | 未迁移：MPSS 的 OpenCL 运行时为 x86_64 二进制，需另行移植 |
+| Intel MPI / `mic` 专用 MPI 栈 | ❌ | 未迁移 |
+| 调试器（`gdb`/`gdbserver` 的 MIC 支持、`mpss` 调试工具） | ❌ | 未验证 |
+| 虚拟以太网（`micveth`）与 IB/OFI 传输路径 | ❌ | 模块内有代码但未验收；当前 all-SCIF 路径已满足 offload 需求 |
+
+　　说明：本表的"已支持"只以**真机验收**为准（T0–T8 与 `tests/extra`），未跑过的项目一律标 ❌，避免把"能编译"当成"能用"。
+
+---
+
+
 ## 版权与许可
 
 　　**上游部分。** 本发布版包含的 MPSS 3.8.6 源码、卡端引导镜像与文档，Copyright (C) Intel Corporation，版权归 Intel Corporation 所有，按 Intel 随包提供的许可证分发。各包根目录下的 `COPYING`、`COPYING.LIB`、`COPYING.BSD`、`COPYING.LGPL` 等文件即为对应许可证原文，请以那些文件为准。主机内核模块 `mic.ko` 及其源码按 GPL-2.0 分发。

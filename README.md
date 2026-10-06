@@ -10,6 +10,39 @@ The screenshot above is the machine this port was validated on. The upper half s
 
 ---
 
+## Client support matrix (native Intel Xeon Phi usage -> the state of this port)
+
+　　The "supported" column is ✅ only where it has been accepted **on real hardware** (stage numbers refer to [Appendix J](docs/J-acceptance-tests.md)); ❌ means not ported or not verified. The remarks column says whether the **usage matches the native platform** (the x86_64 MPSS toolchain): "same" means client code needs no change, while "equivalent" means the usage differs but an **API/intermediate layer of equal value** (or a documented alternative) is provided.
+
+| Client item | Supported | Remarks |
+|---|:---:|---|
+| Kernel module load (`modprobe mic`, `mpssd` service) | ✅ | **Same**: `make install` + `modprobe`, with a udev rule added so a normal user can use the device (T0/T1) |
+| Card boot and online (`micctrl -b`, card reaches `online`) | ✅ | **Same**: the familiar `micctrl` flow (T1) |
+| Management tools (`micctrl`/`miccheck`/`mpssinfo`/`mpssflash`/`mpssd`) | ✅ | **Same**: commands and output formats preserved (T0/T1) |
+| Graphical console (`micsmc` GUI) | ❌ | Built but never run; check its dependencies against [Appendix E](docs/E-porting-patches.md) first |
+| Host user-space SCIF (`libscif`) | ✅ | **Same**: all 27 `scif_*` APIs keep their semantics (T3; rules in [Appendix L](docs/L-api-determinism-rules.md)) |
+| Host COI (`libcoi_host`) and the card's `coi_daemon` | ✅ | **Equivalent**: process/pipeline/event APIs are unchanged, but **large `COIBufferCreate` does not work in this port** (`COI_OUT_OF_MEMORY`) — use the "small parameters in, card allocates" pattern (T5/T6/T7) |
+| SSH login and deployment to the card | ✅ | **Same**: `ssh mic0`, `scp` deployment, remote execution (T2) |
+| Host-to-card RMA (`scif_register`/`writeto`) | ✅ | **Same APIs**, with added window/transfer limits (window <= 1 MiB, single transfer <= 1 MiB); see [Appendix K](docs/K-offload-memory-rules.md) |
+| COI end-to-end offload (create process, run a card function, fetch results) | ✅ | **Equivalent**: the same COI call sequence as native (T5); examples in [Appendix F](docs/F-coi-and-openmp.md) |
+| `#pragma offload target(mic)` (Intel LEO syntax) | ✅ | **Equivalent**: source-level syntax unchanged; the host needs a self-built `libgomp`/`liboffloadmic` runtime plus the k1om cross toolchain ([Appendix H](docs/H-offload-field-notes.md), [F](docs/F-coi-and-openmp.md)) |
+| Card-side OpenMP (`libgomp` on KNC) | ✅ | **Equivalent**: `omp_set_num_threads(240)` and friends behave the same; a card kernel's optimisation level must be measured per source file (Appendix J, pitfall 2) |
+| k1om cross compilation (`k1om-mpss-linux-gcc`, `-mmic` target) | ✅ | **Same**: Intel's original k1om toolchain, but the sysroot has to be assembled by hand (Appendix H) |
+| Card image customisation (initramfs rebuild, `09-boot-images`) | ✅ | **Same**: the familiar cpio/image flow ([Appendix E](docs/E-porting-patches.md)) |
+| `mic0` host interface coming up automatically | ✅ | **Same**: brought up at boot (commit `9b6d9e6`) |
+| Card-side kernel module (`micscif.ko` on the card) | ✅ | **Same**: the vendor module still works; **rebuilding it hits toolchain obstacles** and is recorded as an optional path ([Appendix K](docs/K-offload-memory-rules.md), K.6) |
+| Non-root usage (device permissions, `RLIMIT_MEMLOCK`) | ✅ | **Same**: `/dev/mic/scif` 0666 plus a udev rule (T1); pinning is still bounded by `ulimit -l` |
+| Host page-size adaptation (4/16/64 KiB kernels) | ✅ | **Equivalent**: degenerates to native behaviour on 4 KiB hosts; 16 KiB measured here ([Appendix M](docs/M-portability-and-compatibility.md)) |
+| OpenCL (card-side runtime) | ❌ | Not ported: MPSS ships it as x86_64 binaries |
+| Intel MPI / the `mic`-aware MPI stack | ❌ | Not ported |
+| Debuggers (MIC-aware `gdb`/`gdbserver`, MPSS debug tools) | ❌ | Not verified |
+| Virtual Ethernet (`micveth`) and the IB/OFI transport paths | ❌ | Code exists in the module but is unverified; the all-SCIF path already covers offload |
+
+　　Note: "supported" here means **accepted on real hardware** (T0-T8 plus `tests/extra`) — anything never run is marked ❌, so that "it compiles" is never confused with "it works".
+
+---
+
+
 ## Copyright and License
 
 **Upstream components.** The MPSS 3.8.6 sources, the card-side boot images and the documentation bundled in this release are copyright Intel Corporation and are distributed under the licenses shipped with them. The `COPYING`, `COPYING.LIB`, `COPYING.BSD` and `COPYING.LGPL` files in each package directory are the authoritative license texts; where they and this file disagree, those files govern. The host kernel module `mic.ko` and its sources are distributed under GPL-2.0.
