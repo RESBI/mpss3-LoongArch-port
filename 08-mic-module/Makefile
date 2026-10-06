@@ -5,7 +5,6 @@
 #   make install    # 构建并安装（默认 PREFIX=/usr，需要 root）
 #   make install DESTDIR=/tmp/stage    # 装到暂存目录，不需要 root
 #   make clean      # 清理构建产物
-#   make MIC_DEBUG=1        # 打开 SCIF 诊断打印（默认关闭，见 include/mic/mic_debug.h）
 #
 # 上游原始 Makefile 保留为 Makefile.mpss。调用它**必须显式 -f Makefile.mpss**：
 # 否则 $(MAKE) 会再读本文件，无限递归（发布版自测时踩过一次，把内存吃满了）。
@@ -26,7 +25,7 @@ MPSS_MAKE      := $(MAKE) -f Makefile.mpss
 all: build
 
 build:
-	$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNWARNFLAGS=-Wno-error MIC_DEBUG=$(MIC_DEBUG) \
+	$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNWARNFLAGS=-Wno-error \
 		KERNEL_SRC=$(KERNEL_SRC) KERNEL_VERSION=$(KERNEL_VERSION)
 	@echo "产出：$$(ls -l mic.ko 2>/dev/null | awk '{print $$5" 字节"}')"
 
@@ -73,7 +72,7 @@ install: build
 	@echo "        注：若用 NetworkManager 管 mic0，请先 systemctl disable mic0-net.service 以免互相覆盖"
 
 clean:
-	-$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) clean MIC_DEBUG=$(MIC_DEBUG)
+	-$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) clean
 	-find . \( -name '*.o' -o -name '*.ko' -o -name '.*.cmd' -o -name '*.mod' -o -name '*.mod.c' \) -delete
 	-rm -rf .tmp_versions .cache.mk
 	-rm -f mic.ko

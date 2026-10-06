@@ -449,10 +449,6 @@ static inline bool is_local_dma_addr(uint64_t addr)
  */
 static int micscif_rma_list_dma_copy_aligned(struct mic_copy_work *work, struct dma_channel *chan)
 {
-	if (!micscif_window_desc_valid(work->src_window, "src") ||
-	    !micscif_window_desc_valid(work->dst_window, "dst"))
-		return -EINVAL;
-
 	dma_addr_t src_dma_addr, dst_dma_addr;
 	size_t loop_len, remaining_len, tail_len, src_contig_bytes = 0, dst_contig_bytes = 0;
 	int src_cache_off, dst_cache_off, src_last_index = 0, dst_last_index = 0;
@@ -733,10 +729,6 @@ static int micscif_rma_list_dma_copy_aligned(struct mic_copy_work *work, struct 
 
 int micscif_rma_list_dma_copy_wrapper(struct endpt *epd, struct mic_copy_work *work, struct dma_channel *chan, off_t loffset)
 {
-	if (!micscif_window_desc_valid(work->src_window, "src") ||
-	    !micscif_window_desc_valid(work->dst_window, "dst"))
-		return -EINVAL;
-
 	int src_cache_off, dst_cache_off;
 	uint64_t src_offset = work->src_offset, dst_offset = work->dst_offset;
 	uint8_t *temp = NULL;

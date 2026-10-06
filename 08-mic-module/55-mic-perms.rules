@@ -1,0 +1,14 @@
+# /dev/mic/scif 与 /dev/mic/ctrl 放开给普通用户。
+#
+# 两个坑叠在一起：
+#   1) 上游的 50-udev-mic.rules 用旧式 NAME="mic/%k" 写法，systemd-udev 会忽略该写法；
+#   2) 这份驱动用 device_create() 建的节点在 /dev/mic/scif，而 udev 事件里算出来的
+#      节点名是 /dev/scif（udevadm info 可见 N: scif、DEVNAME=/dev/scif，但该路径并不存在），
+#      于是 MODE="0666" 落到了不存在的路径上，节点仍旧是 crw------- root:root。
+# 所以这里不指望 MODE 生效，直接用 RUN+ 对真实节点 chmod；两条路径都试，
+# 换个内核/udev 版本节点落在哪一边都能覆盖。
+#
+# 随 08-mic-module 安装到 /usr/lib/udev/rules.d/55-mic-perms.rules。
+
+ACTION=="add|change", SUBSYSTEM=="mic", KERNEL=="scif", MODE="0666", RUN+="/bin/sh -c 'chmod 666 /dev/mic/scif /dev/scif 2>/dev/null; chmod o+x /dev/mic 2>/dev/null; true'"
+ACTION=="add|change", SUBSYSTEM=="mic", KERNEL=="ctrl", MODE="0666", RUN+="/bin/sh -c 'chmod 666 /dev/mic/ctrl /dev/ctrl 2>/dev/null; chmod o+x /dev/mic 2>/dev/null; true'"

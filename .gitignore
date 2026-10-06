@@ -24,3 +24,19 @@ apps/mpssinfo/mpssinfo
 apps/mpssflash/mpssflash
 apps/micsmc/micsmc
 _miccheck/common/version.py
+
+# 测试产物与构建中间物：不入库（会导致 tests/ 未跟踪体积达数十 MB）
+tests/logs/
+tests/extra/logs/
+tests/build/
+*.ko
+*.o
+*.mod
+*.mod.c
+*.cmd
+*.order
+*.symvers
+*.zst
+*.k1om
+# 本机私有配置（各脚本自行 source，含本地路径/凭据）
+config.sh
