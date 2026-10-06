@@ -36,17 +36,24 @@ else
 endif
 SEARCH_ENV := C_INCLUDE_PATH=$(EXTRA_INC) CPLUS_INCLUDE_PATH=$(EXTRA_INC) LIBRARY_PATH=$(EXTRA_LIB)
 
+# apps/* 需要本包**源码树内**的头与库（miclib/include/miclib.h、miclib/libs/libmicmgmt.so），
+# 否则就形成"apps 依赖 install 产物"的鸡生蛋：install: build，而 headers/库只有 install 才到位。
+# 注意：这里只给 apps 用，miclib 自身仍用 SEARCH_ENV —— 避免把 /usr/include 重复加入
+# C_INCLUDE_PATH 而破坏 libstdc++ 的 #include_next <stdlib.h>（见上方注释）。
+APPSEARCH   := C_INCLUDE_PATH=$(CURDIR)/miclib/include CPLUS_INCLUDE_PATH=$(CURDIR)/miclib/include \
+               LIBRARY_PATH=$(CURDIR)/miclib/libs
+
 .PHONY: all build install clean
 all: build
 
 APPFLAGS  := CXXFLAGS='-Wno-error -fpermissive' CFLAGS='-Wno-error' \
-             EXTRA_CFLAGS='-Wall -Wextra -Wno-error'
+             EXTRA_CFLAGS='-Wall -Wextra -Wno-error -I$(CURDIR)/miclib/include'
 
 build:
 	$(SEARCH_ENV) $(MAKE) -C miclib CXX=$(CXX) CC=$(CC) CXXFLAGS='-Wno-error'
-	$(SEARCH_ENV) $(MAKE) -C apps/mpssinfo  CXX=$(CXX) CC=$(CC) $(APPFLAGS)
-	$(SEARCH_ENV) $(MAKE) -C apps/mpssflash CXX=$(CXX) CC=$(CC) $(APPFLAGS)
-	$(SEARCH_ENV) $(MAKE) -C apps/micsmc    CXX=$(CXX) CC=$(CC) $(APPFLAGS)
+	$(APPSEARCH) $(MAKE) -C apps/mpssinfo  CXX=$(CXX) CC=$(CC) $(APPFLAGS)
+	$(APPSEARCH) $(MAKE) -C apps/mpssflash CXX=$(CXX) CC=$(CC) $(APPFLAGS)
+	$(APPSEARCH) $(MAKE) -C apps/micsmc    CXX=$(CXX) CC=$(CC) $(APPFLAGS)
 
 install: build
 	install -d $(STAGE)/lib64 $(STAGE)/bin $(STAGE)/include
