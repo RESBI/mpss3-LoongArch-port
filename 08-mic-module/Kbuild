@@ -49,6 +49,12 @@ subdir-ccflags-$(CONFIG_X86_MICPCI) += -D_MIC_SCIF_
 subdir-ccflags-$(not-$(CONFIG_X86_MICPCI)) += -DHOST -DUSE_VCONSOLE
 
 # always set? what's this thing's purpose?
+# 诊断打印默认关闭：需要时 make MIC_DEBUG=1（见 include/mic/mic_debug.h）。
+# 注意：Kbuild 只认 -y/-m 后缀，subdir-ccflags-$(MIC_DEBUG) 会展开成 subdir-ccflags-1 而被忽略，
+# 因此这里用 ifneq 判断。
+ifneq ($(MIC_DEBUG),)
+subdir-ccflags-y += -DMIC_SCIF_DEBUG_PRINT
+endif
 subdir-ccflags-y += -D__LINUX_GPL__ -D_MODULE_SCIF_
 
 subdir-ccflags-y += -I$(M)/include

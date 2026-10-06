@@ -5,6 +5,7 @@
 #   make install    # 构建并安装（默认 PREFIX=/usr，需要 root）
 #   make install DESTDIR=/tmp/stage    # 装到暂存目录，不需要 root
 #   make clean      # 清理构建产物
+#   make MIC_DEBUG=1        # 打开 SCIF 诊断打印（默认关闭，见 include/mic/mic_debug.h）
 #
 # 上游原始 Makefile 保留为 Makefile.mpss。调用它**必须显式 -f Makefile.mpss**：
 # 否则 $(MAKE) 会再读本文件，无限递归（发布版自测时踩过一次，把内存吃满了）。
@@ -25,7 +26,7 @@ MPSS_MAKE      := $(MAKE) -f Makefile.mpss
 all: build
 
 build:
-	$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNWARNFLAGS=-Wno-error \
+	$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNWARNFLAGS=-Wno-error MIC_DEBUG=$(MIC_DEBUG) \
 		KERNEL_SRC=$(KERNEL_SRC) KERNEL_VERSION=$(KERNEL_VERSION)
 	@echo "产出：$$(ls -l mic.ko 2>/dev/null | awk '{print $$5" 字节"}')"
 
@@ -40,14 +41,23 @@ install: build
 	install -m644 mic0-net.service $(STAGE)/lib/systemd/system/mic0-net.service
 	install -d $(STAGE)/lib/udev/rules.d
 	install -m644 90-mic0-net.rules $(STAGE)/lib/udev/rules.d/90-mic0-net.rules
+	install -m644 55-mic-perms.rules $(STAGE)/lib/udev/rules.d/55-mic-perms.rules
 	@if [ -z "$(DESTDIR)" ]; then depmod -a $(KERNEL_VERSION); fi
 	@echo "已安装 mic.ko -> /lib/modules/$(KERNEL_VERSION)/"
 	@echo "  配置：$(SYSCONFDIR)/modprobe.d/mic.conf、$(SYSCONFDIR)/udev/rules.d/50-udev-mic.rules"
+	@echo "        $(STAGE)/lib/udev/rules.d/55-mic-perms.rules（放开 /dev/mic/scif、/dev/mic/ctrl 给普通用户）"
 	@echo "        $(SYSCONFDIR)/modules-load.d/mic.conf（开机自动 modprobe mic）"
 	@echo "        $(STAGE)/lib/systemd/system/mic0-net.service + $(STAGE)/libexec/mpss/mic0-up.sh（mic0 出现即 up 并配地址）"
 	@if [ -z "$(DESTDIR)" ]; then \
 		systemctl daemon-reload 2>/dev/null || true; \
 		udevadm control --reload-rules 2>/dev/null || true; \
+		if [ -e /dev/mic/scif ]; then \
+			udevadm trigger --action=add /sys/class/mic/scif 2>/dev/null || true; \
+			udevadm trigger --action=add /sys/class/mic/ctrl 2>/dev/null || true; \
+			chmod 666 /dev/mic/scif /dev/mic/ctrl 2>/dev/null || true; \
+			chmod o+x /dev/mic 2>/dev/null || true; \
+			echo "        设备权限：/dev/mic/scif 现为 $$(stat -c %a /dev/mic/scif 2>/dev/null)"; \
+		fi; \
 		if systemctl enable mic0-net.service >/dev/null 2>&1; then \
 			echo "        已 enable mic0-net.service"; \
 			if [ -e /sys/class/net/mic0 ]; then \
@@ -63,7 +73,11 @@ install: build
 	@echo "        注：若用 NetworkManager 管 mic0，请先 systemctl disable mic0-net.service 以免互相覆盖"
 
 clean:
-	-$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) clean
+	-$(MPSS_MAKE) MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) clean MIC_DEBUG=$(MIC_DEBUG)
 	-find . \( -name '*.o' -o -name '*.ko' -o -name '.*.cmd' -o -name '*.mod' -o -name '*.mod.c' \) -delete
 	-rm -rf .tmp_versions .cache.mk
 	-rm -f mic.ko
+	# Kbuild 的 modules.order / Module.symvers 若由 `sudo make install` 生成，
+	# 属主是 root；普通用户再构建时会报 "modules.order: Permission denied"。
+	# 删文件只需要目录可写，所以这里能直接清掉（清不掉时用 sudo rm -f）。
+	-rm -f modules.order Module.symvers

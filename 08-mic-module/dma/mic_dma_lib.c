@@ -62,6 +62,7 @@
 #include <mic/compl_buf_ring.h>
 #include <mic/micscif_smpt.h>
 #include <mic/micsboxdefine.h>
+#include "mic/mic_debug.h"
 
 MODULE_LICENSE("GPL");
 
@@ -694,6 +695,18 @@ program_memcpy_descriptors(struct dma_channel *chan, uint64_t src, uint64_t dst,
 	} else {
 		is_astep = true;
 	}
+	{
+		size_t _tot = 0;
+		int _n = 0;
+		size_t _l = len;
+		while (_l > 0) {
+			size_t _c = (_l > MAX_DMA_XFER_SIZE) ? MAX_DMA_XFER_SIZE : _l;
+			_tot += _c; _n++; _l -= _c;
+		}
+		mic_dbg("MIC scif DMA: %s len=%zu -> %d desc, cap=%lu, ring=%d\n",
+			__func__, len, _n, (unsigned long)MAX_DMA_XFER_SIZE,
+			(int)chan->chan->num_desc_in_ring);
+	}
 	do {
 		current_transfer_len = (len > MAX_DMA_XFER_SIZE) ?
 					MAX_DMA_XFER_SIZE : len;
@@ -708,6 +721,9 @@ program_memcpy_descriptors(struct dma_channel *chan, uint64_t src, uint64_t dst,
 		}
 
 		//pr_debug("src_phys=0x%llx, dst_phys=0x%llx, size=0x%zx\n", src_phys_addr, dst_phys_addr, current_transfer_len);
+		mic_dbg("MIC scif DESC: idx=%d src=0x%llx dst=0x%llx len=%zu\n",
+			(int)chan->next_write_index, (unsigned long long)src,
+			(unsigned long long)dst, current_transfer_len);
 		md_mic_dma_memcpy_desc(&chan->desc_ring[chan->next_write_index],
 					    src, dst, current_transfer_len);
 		chan->next_write_index = incr_rb_index((int)chan->next_write_index,

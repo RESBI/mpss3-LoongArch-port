@@ -463,6 +463,14 @@ static int micscif_rma_list_dma_copy_aligned(struct mic_copy_work *work, struct 
 
 	remaining_len = work->len;
 
+	pr_debug("SCIFALIGN: src_off=0x%llx dst_off=0x%llx len=0x%lx | src_w off=0x%llx np=%lld ncc=%lld t=%d | dst_w off=0x%llx np=%lld ncc=%lld t=%d\n",
+		(unsigned long long)src_offset, (unsigned long long)dst_offset,
+		(unsigned long)work->len,
+		(unsigned long long)src_window->offset, (long long)src_window->nr_pages,
+		(long long)src_window->nr_contig_chunks, (int)src_window->type,
+		(unsigned long long)dst_window->offset, (long long)dst_window->nr_pages,
+		(long long)dst_window->nr_contig_chunks, (int)dst_window->type);
+
 	src_cache_off = src_offset & (L1_CACHE_BYTES - 1);
 	dst_cache_off = dst_offset & (L1_CACHE_BYTES - 1);
 	if (src_cache_off != dst_cache_off) {
@@ -474,6 +482,10 @@ static int micscif_rma_list_dma_copy_aligned(struct mic_copy_work *work, struct 
 		src_dma_addr = micscif_get_dma_addr(src_window, src_offset, NULL, NULL, NULL);
 		dst_dma_addr = micscif_get_dma_addr(dst_window, dst_offset, NULL, NULL, NULL);
 #ifdef CONFIG_ML1OM
+		pr_debug("SCIFALIGN-HEAD: src_dma=0x%llx dst_dma=0x%llx (ERR=0x%llx) loop_len=0x%lx\n",
+			(unsigned long long)src_dma_addr,
+			(unsigned long long)dst_dma_addr,
+			(unsigned long long)RMA_ERROR_CODE, (unsigned long)loop_len);
 		if (RMA_ERROR_CODE == src_dma_addr)
 			return -ENXIO;
 		if (RMA_ERROR_CODE == dst_dma_addr)

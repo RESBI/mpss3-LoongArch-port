@@ -78,6 +78,7 @@
 #include <asm/atomic.h>
 #include <linux/netdevice.h>
 #include <linux/debugfs.h>
+#include "mic/mic_debug.h"
 #include "mic/micscif_kmem_cache.h"
 
 struct rma_mmu_notifier {
@@ -297,14 +298,20 @@ struct reg_range_t {
 			/* Handle for sending ALLOC_REQ */
 			struct allocmsg		alloc_handle;
 
-			/* Wait Queue for an registration (N)ACK */
-			wait_queue_head_t	regwq;
+			/* Wait Queue for an registration (N)ACK（指针化：packed 结构内的等待队列会落在非对齐地址，
+			 * LoongArch 内核态无法模拟非对齐原子访问；填充与原大小相同，
+			 * 结构体大小与其余字段偏移不变）*/
+			wait_queue_head_t	*regwq_ptr;
+			unsigned char		_regwq_pad[sizeof(wait_queue_head_t) - sizeof(void *)];
 
 			/* Registration state */
 			enum micscif_msg_state	reg_state;
 
-			/* Wait Queue for an unregistration (N)ACK */
-			wait_queue_head_t	unregwq;
+			/* Wait Queue for an unregistration (N)ACK（指针化：packed 结构内的等待队列会落在非对齐地址，
+			 * LoongArch 内核态无法模拟非对齐原子访问；填充与原大小相同，
+			 * 结构体大小与其余字段偏移不变）*/
+			wait_queue_head_t	*unregwq_ptr;
+			unsigned char		_unregwq_pad[sizeof(wait_queue_head_t) - sizeof(void *)];
 		};
 		/* Peer RAS specific window elements */
 		struct {
@@ -318,8 +325,11 @@ struct reg_range_t {
 			/* Mmap state */
 			enum micscif_msg_state	gttmap_state;
 
-			/* Wait Queue for an unregistration (N)ACK */
-			wait_queue_head_t	gttmapwq;
+			/* Wait Queue for an unregistration (N)ACK（指针化：packed 结构内的等待队列会落在非对齐地址，
+			 * LoongArch 内核态无法模拟非对齐原子访问；填充与原大小相同，
+			 * 结构体大小与其余字段偏移不变）*/
+			wait_queue_head_t	*gttmapwq_ptr;
+			unsigned char		_gttmapwq_pad[sizeof(wait_queue_head_t) - sizeof(void *)];
 
 			/* Ref count per page */
 			int			*page_ref_count;
@@ -632,6 +642,18 @@ extern bool mic_huge_page_enable;
 #define SCIF_HUGE_PAGE_SHIFT	21
 
 /*
+ * 协议页大小：对端（KNC 卡端）的内核页固定为 4 KiB。
+ * 宿主页更大时，凡把「页数」送出到对端的地方都要按这个因子换算；
+ * 宿主内部一律继续使用宿主页。因子为 1 时行为与原来完全一致。
+ */
+#define SCIF_PROTO_PAGE_SHIFT	12
+#define SCIF_PROTO_PAGE_SIZE	(1UL << SCIF_PROTO_PAGE_SHIFT)
+#define SCIF_PEER_PAGE_FACTOR	(PAGE_SIZE / SCIF_PROTO_PAGE_SIZE)
+#define HOST_PAGES_TO_PEER(n)	((n) * SCIF_PEER_PAGE_FACTOR)
+/* 线上页数 -> 本地页数（宿主页 16 KiB 时为除以 4；卡端为 1 倍）*/
+#define PEER_PAGES_TO_LOCAL(n)	((n) / SCIF_PEER_PAGE_FACTOR)
+
+/*
  * micscif_is_huge_page:
  * @page: A physical page.
  */
@@ -704,8 +726,23 @@ micscif_set_nr_pages(struct micscif_dev *dev, struct reg_range_t *window)
 	int l = 0, k;
 #endif
 
+	mic_dbg("MIC scif WND: %s offset=0x%llx type=%d nr_pages=%lld nr_contig_chunks=%lld\n",
+		__func__, (unsigned long long)window->offset, (int)window->type,
+		(long long)window->nr_pages,
+		(long long)window->nr_contig_chunks);
 	for (j = 0; j < window->nr_contig_chunks; j++) {
 		window->num_pages[j] = RMA_GET_NR_PAGES(window->dma_addr[j]);
+		/*
+		 * 页数的单位随窗口所属一侧而不同，这里【不做】换算，保持描述里的原样：
+		 *   - 自有窗口（RMA_WINDOW_SELF）：宿主页
+		 *   - 对端窗口（RMA_WINDOW_PEER）：线上单位 4 KiB
+		 * 字节运算时再按各自的页大小相乘（见 micscif_get_dma_addr）。
+		 * 曾经把对端页数除以 4 换算成宿主页：卡端「一段一页 = 4 KiB」被整除成 0，
+		 * 段跨度因此算成 0 字节，查找扫完后 BUG_ON(1)（实测：T8 的 1 MiB 窗口）。
+		 */
+		mic_dbg("MIC scif WND: chunk %d packed num_pages=%d addr=0x%llx\n",
+			j, window->num_pages[j],
+			(unsigned long long)RMA_GET_ADDR(window->dma_addr[j]));
 		if (window->num_pages[j])
 			window->dma_addr[j] = RMA_GET_ADDR(window->dma_addr[j]);
 		else
@@ -754,10 +791,19 @@ static __always_inline dma_addr_t
 micscif_get_dma_addr(struct reg_range_t *window, uint64_t off, size_t *nr_bytes, int *index, uint64_t *start_off)
 {
 	if (window->nr_pages == window->nr_contig_chunks) {
-		int page_nr = (int)((off - window->offset) >> PAGE_SHIFT);
-		off_t page_off = off & ~PAGE_MASK;
+		/*
+		 * 「一段一页」时，步长必须是该窗口所属一侧的页大小：
+		 *  - 自有窗口：宿主页（PAGE_SIZE，本机 16 KiB）
+		 *  - 对端窗口：线上单位 4 KiB（卡端每段就是一页 4 KiB）
+		 * 若一律用本机 PAGE_SIZE，会向 DMA 引擎声称可以连续搬 16 KiB，
+		 * 而目的地实际每 4 KiB 就是一页，导致只有第一页正确（实测如此）。
+		 */
+		size_t wpage = (window->type == RMA_WINDOW_PEER) ?
+				SCIF_PROTO_PAGE_SIZE : PAGE_SIZE;
+		int page_nr = (int)((off - window->offset) / wpage);
+		off_t page_off = (off - window->offset) % wpage;
 		if (nr_bytes)
-			*nr_bytes = PAGE_SIZE - page_off;
+			*nr_bytes = wpage - page_off;
         if (page_nr >= window->nr_pages) {
             printk(KERN_ERR "%s dma_addr out of boundary\n", __FUNCTION__);
         }
@@ -766,8 +812,16 @@ micscif_get_dma_addr(struct reg_range_t *window, uint64_t off, size_t *nr_bytes,
 		int i = index ? *index : 0;
 		uint64_t end;
 		uint64_t start = start_off ? *start_off : window->offset;
+		/*
+		 * 段的字节跨度必须按「该窗口所属一侧」的页大小算，与上面分支保持一致：
+		 *   自有窗口：宿主页（PAGE_SIZE，本机 16 KiB）
+		 *   对端窗口：线上单位 4 KiB（num_pages[] 就记在 4 KiB 单位上）
+		 * 一律 << PAGE_SHIFT 会把对端的 4 KiB 段算成 16 KiB，单页段更是算成 0 字节。
+		 */
+		size_t wpage = (window->type == RMA_WINDOW_PEER) ?
+				SCIF_PROTO_PAGE_SIZE : PAGE_SIZE;
 		for (; i < window->nr_contig_chunks; i++) {
-			end = start + (window->num_pages[i] << PAGE_SHIFT);
+			end = start + ((uint64_t)window->num_pages[i] * wpage);
 			if (off >= start && off < end) {
 				if (index)
 					*index = i;
@@ -777,11 +831,30 @@ micscif_get_dma_addr(struct reg_range_t *window, uint64_t off, size_t *nr_bytes,
 					*nr_bytes = end - off;
 				return (window->dma_addr[i] + (off - start));
 			}
-			start += (window->num_pages[i] << PAGE_SHIFT);
+			start += ((uint64_t)window->num_pages[i] * wpage);
 		}
 	}
 #ifdef CONFIG_MK1OM
-	printk(KERN_ERR "%s %d BUG. Addr not found? window %p off 0x%llx\n", __func__, __LINE__, window, off);
+	printk(KERN_ERR "%s %d BUG. Addr not found? window %p type=%d off=0x%llx win_off=0x%llx nr_pages=%lld chunks=%lld\n",
+		__func__, __LINE__, window, (int)window->type,
+		(unsigned long long)off, (unsigned long long)window->offset,
+		(long long)window->nr_pages, (long long)window->nr_contig_chunks);
+	{
+		/* 把前 8 段与后 2 段的跨度打出来，一眼能看出单位是不是错了 */
+		int _i;
+		uint64_t _s = window->offset;
+		size_t _w = (window->type == RMA_WINDOW_PEER) ?
+				SCIF_PROTO_PAGE_SIZE : PAGE_SIZE;
+		for (_i = 0; _i < window->nr_contig_chunks && _i < 8; _i++) {
+			printk(KERN_ERR "   chunk %d: num_pages=%lld span=%llu start=0x%llx addr=0x%llx\n",
+				_i, (long long)window->num_pages[_i],
+				(unsigned long long)((uint64_t)window->num_pages[_i] * _w),
+				(unsigned long long)_s,
+				(unsigned long long)window->dma_addr[_i]);
+			_s += (uint64_t)window->num_pages[_i] * _w;
+		}
+		printk(KERN_ERR "   (page unit used = %zu bytes)\n", _w);
+	}
 	BUG_ON(1);
 #endif
 	return RMA_ERROR_CODE;

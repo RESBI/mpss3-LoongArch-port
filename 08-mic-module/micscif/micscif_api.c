@@ -45,6 +45,7 @@
 #include "mic_common.h"
 #endif
 #include "mic/micscif_map.h"
+#include "mic/mic_debug.h"
 
 #define SCIF_MAP_ULIMIT 0x40
 
@@ -1935,11 +1936,21 @@ __scif_pin_pages(void *addr, size_t len, int *out_prot,
 	if (prot & ~(SCIF_PROT_READ | SCIF_PROT_WRITE))
 		return -EINVAL;
 
-	/* addr/len must be page aligned. len should be non zero */
+	/*
+	 * addr 仍须宿主页对齐；len 只须按协议页（4 KiB）对齐，
+	 * 因为它随后会向上取整到宿主页再 pin。
+	 */
 	if ((!len) ||
 		(align_low((uint64_t)addr, PAGE_SIZE) != (uint64_t)addr) ||
-		(align_low((uint64_t)len, PAGE_SIZE) != (uint64_t)len))
+		(align_low((uint64_t)len, SCIF_PROTO_PAGE_SIZE) != (uint64_t)len)) {
+		mic_dbg("MIC scif: pin_pages 拒绝 addr=%px len=0x%zx（宿主页 0x%lx 协议页 0x%lx）\n",
+			addr, (size_t)len, (unsigned long)PAGE_SIZE,
+			(unsigned long)SCIF_PROTO_PAGE_SIZE);
 		return -EINVAL;
+	}
+
+	/* 内部一律按宿主页 pin，故长度向上取整 */
+	len = (size_t)ALIGN(len, PAGE_SIZE);
 
 	might_sleep();
 
@@ -2521,11 +2532,14 @@ __scif_register(scif_epd_t epd, void *addr, size_t len, off_t offset,
 	if (prot & ~(SCIF_PROT_READ | SCIF_PROT_WRITE))
 		return -EINVAL;
 
-	/* addr/len must be page aligned. len should be non zero */
+	/* addr 仍须宿主页对齐；len 只须按协议页（4 KiB）对齐 */
 	if ((!len) ||
 		(align_low((uint64_t)addr, PAGE_SIZE) != (uint64_t)addr) ||
-		(align_low((uint64_t)len, PAGE_SIZE) != (uint64_t)len))
+		(align_low((uint64_t)len, SCIF_PROTO_PAGE_SIZE) != (uint64_t)len)) {
+		mic_dbg("MIC scif: register 拒绝 addr=%px len=0x%zx（宿主页 0x%lx）\n",
+			addr, (size_t)len, (unsigned long)PAGE_SIZE);
 		return -EINVAL;
+	}
 
 	/*
 	 * Offset is not page aligned/negative or offset+len
@@ -2555,7 +2569,7 @@ __scif_register(scif_epd_t epd, void *addr, size_t len, off_t offset,
 		return err;
 
 	/* Allocate and prepare self registration window */
-	if (!(window = micscif_create_window(ep, len >> PAGE_SHIFT,
+	if (!(window = micscif_create_window(ep, ALIGN(len, PAGE_SIZE) >> PAGE_SHIFT,
 			computed_offset, false))) {
 		micscif_free_window_offset(ep, computed_offset, len);
 		return -ENOMEM;
@@ -2563,7 +2577,7 @@ __scif_register(scif_epd_t epd, void *addr, size_t len, off_t offset,
 
 	micscif_inc_node_refcnt(ep->remote_dev, 1);
 
-	window->nr_pages = len >> PAGE_SHIFT;
+	window->nr_pages = ALIGN(len, PAGE_SIZE) >> PAGE_SHIFT;
 
 	if ((err = micscif_send_alloc_request(ep, window))) {
 		micscif_destroy_incomplete_window(ep, window);

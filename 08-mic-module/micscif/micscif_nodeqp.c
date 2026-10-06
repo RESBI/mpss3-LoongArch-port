@@ -40,6 +40,7 @@
 #include "mic/micscif_nm.h"
 #include "mic_common.h"
 #include "mic/micscif_map.h"
+#include "mic/mic_debug.h"
 
 #define SBOX_MMIO_LENGTH	0x10000
 /* FIXME: HW spefic, define someplace else */
@@ -1448,6 +1449,10 @@ static __always_inline void
 scif_alloc_gnt_rej(struct micscif_dev *scifdev, struct nodemsg *msg)
 {
 	struct allocmsg *handle = (struct allocmsg *)msg->payload[2];
+	mic_dbg("MIC scif GNT: uop=%llu payload0=0x%llx payload1=0x%llx payload2=0x%llx payload3=0x%llx\n",
+		(unsigned long long)msg->uop,
+		(unsigned long long)msg->payload[0], (unsigned long long)msg->payload[1],
+		(unsigned long long)msg->payload[2], (unsigned long long)msg->payload[3]);
 	switch (handle->uop) {
 	case SCIF_REGISTER:
 	{
@@ -1457,7 +1462,8 @@ scif_alloc_gnt_rej(struct micscif_dev *scifdev, struct nodemsg *msg)
 			handle->state = OP_COMPLETED;
 		else
 			handle->state = OP_FAILED;
-		wake_up(&handle->allocwq);
+		if (handle->allocwq_ptr)
+			wake_up(handle->allocwq_ptr);
 		break;
 	}
 	default:
@@ -1573,7 +1579,7 @@ scif_recv_unregister(struct micscif_dev *scifdev, struct nodemsg *msg)
 	req.out_window = &window;
 	req.offset = recv_window->offset;
 	req.prot = 0;
-	req.nr_bytes = recv_window->nr_pages << PAGE_SHIFT;
+	req.nr_bytes = (uint64_t)recv_window->nr_pages << SCIF_PROTO_PAGE_SHIFT;
 	req.type = WINDOW_FULL;
 	req.head = &ep->rma_info.remote_reg_list;
 	msg->payload[0] = ep->remote_ep;
@@ -1631,7 +1637,8 @@ scif_recv_register_ack(struct micscif_dev *scifdev, struct nodemsg *msg)
 		(struct reg_range_t *)msg->payload[2];
 	RMA_MAGIC(window);
 	window->reg_state = OP_COMPLETED;
-	wake_up(&window->regwq);
+	if (window->regwq_ptr)
+		wake_up(window->regwq_ptr);
 }
 
 /**
@@ -1648,7 +1655,8 @@ scif_recv_register_nack(struct micscif_dev *scifdev, struct nodemsg *msg)
 		(struct reg_range_t *)msg->payload[2];
 	RMA_MAGIC(window);
 	window->reg_state = OP_FAILED;
-	wake_up(&window->regwq);
+	if (window->regwq_ptr)
+		wake_up(window->regwq_ptr);
 }
 /**
  * scif_recv_unregister_ack: Respond to SCIF_UNREGISTER_ACK interrupt message
@@ -1663,7 +1671,8 @@ scif_recv_unregister_ack(struct micscif_dev *scifdev, struct nodemsg *msg)
 		(struct reg_range_t *)msg->payload[1];
 	RMA_MAGIC(window);
 	window->unreg_state = OP_COMPLETED;
-	wake_up(&window->unregwq);
+	if (window->unregwq_ptr)
+		wake_up(window->unregwq_ptr);
 }
 
 /**
@@ -1680,7 +1689,8 @@ scif_recv_unregister_nack(struct micscif_dev *scifdev, struct nodemsg *msg)
 		(struct reg_range_t *)msg->payload[1];
 	RMA_MAGIC(window);
 	window->unreg_state = OP_FAILED;
-	wake_up(&window->unregwq);
+	if (window->unregwq_ptr)
+		wake_up(window->unregwq_ptr);
 }
 
 static __always_inline void
@@ -1699,7 +1709,7 @@ scif_recv_munmap(struct micscif_dev *scifdev, struct nodemsg *msg)
 	req.out_window = &window;
 	req.offset = recv_window->offset;
 	req.prot = recv_window->prot;
-	req.nr_bytes = recv_window->nr_pages << PAGE_SHIFT;
+	req.nr_bytes = (uint64_t)recv_window->nr_pages << SCIF_PROTO_PAGE_SHIFT;
 	req.type = WINDOW_FULL;
 	req.head = &ep->rma_info.reg_list;
 	msg->payload[0] = ep->remote_ep;

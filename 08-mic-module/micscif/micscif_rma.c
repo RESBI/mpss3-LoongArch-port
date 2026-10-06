@@ -42,6 +42,7 @@
 #endif
 #include "mic/mic_dma_api.h"
 #include "mic/micscif_map.h"
+#include "mic/mic_debug.h"
 
 bool mic_reg_cache_enable = 0;
 
@@ -450,9 +451,15 @@ struct reg_range_t *micscif_create_window(struct endpt *ep,
 	window->ep = (uint64_t)ep;
 	window->magic = SCIFEP_MAGIC;
 	window->reg_state = OP_IDLE;
-	init_waitqueue_head(&window->regwq);
+	if (!window->regwq_ptr &&
+	    !(window->regwq_ptr = scif_zalloc(sizeof(wait_queue_head_t))))
+		goto error_free_window;
+	init_waitqueue_head(window->regwq_ptr);
 	window->unreg_state = OP_IDLE;
-	init_waitqueue_head(&window->unregwq);
+	if (!window->unregwq_ptr &&
+	    !(window->unregwq_ptr = scif_zalloc(sizeof(wait_queue_head_t))))
+		goto error_free_window;
+	init_waitqueue_head(window->unregwq_ptr);
 	INIT_LIST_HEAD(&window->list_member);
 	window->type = RMA_WINDOW_SELF;
 	window->temp = temp;
@@ -469,6 +476,16 @@ error_free_window:
 		scif_free(window->temp_phys_addr, nr_pages * sizeof(*(window->temp_phys_addr)));
 	if (window->phys_addr)
 		scif_free(window->phys_addr, nr_pages * sizeof(*(window->phys_addr)));
+#endif
+	if (window->alloc_handle.allocwq_ptr)
+		scif_free(window->alloc_handle.allocwq_ptr, sizeof(wait_queue_head_t));
+	if (window->regwq_ptr)
+		scif_free(window->regwq_ptr, sizeof(wait_queue_head_t));
+	if (window->unregwq_ptr)
+		scif_free(window->unregwq_ptr, sizeof(wait_queue_head_t));
+#ifdef CONFIG_ML1OM
+	if (window->gttmapwq_ptr)
+		scif_free(window->gttmapwq_ptr, sizeof(wait_queue_head_t));
 #endif
 	scif_free(window, sizeof(*window));
 error:
@@ -491,7 +508,7 @@ int micscif_destroy_incomplete_window(struct endpt *ep, struct reg_range_t *wind
 
 	RMA_MAGIC(window);
 retry:
-	err = wait_event_timeout(alloc->allocwq, alloc->state != OP_IN_PROGRESS, NODE_ALIVE_TIMEOUT);
+	err = wait_event_timeout(*alloc->allocwq_ptr, alloc->state != OP_IN_PROGRESS, NODE_ALIVE_TIMEOUT);
 	if (!err && scifdev_alive(ep))
 		goto retry;
 
@@ -520,6 +537,16 @@ retry:
 	if (window->temp_phys_addr)
 		scif_free(window->temp_phys_addr, nr_pages *
 			sizeof(*(window->temp_phys_addr)));
+#endif
+	if (window->alloc_handle.allocwq_ptr)
+		scif_free(window->alloc_handle.allocwq_ptr, sizeof(wait_queue_head_t));
+	if (window->regwq_ptr)
+		scif_free(window->regwq_ptr, sizeof(wait_queue_head_t));
+	if (window->unregwq_ptr)
+		scif_free(window->unregwq_ptr, sizeof(wait_queue_head_t));
+#ifdef CONFIG_ML1OM
+	if (window->gttmapwq_ptr)
+		scif_free(window->gttmapwq_ptr, sizeof(wait_queue_head_t));
 #endif
 	scif_free(window, sizeof(*window));
 	return 0;
@@ -587,6 +614,16 @@ int micscif_destroy_window(struct endpt *ep, struct reg_range_t *window)
 			sizeof(*(window->temp_phys_addr)));
 #endif
 	window->magic = 0;
+	if (window->alloc_handle.allocwq_ptr)
+		scif_free(window->alloc_handle.allocwq_ptr, sizeof(wait_queue_head_t));
+	if (window->regwq_ptr)
+		scif_free(window->regwq_ptr, sizeof(wait_queue_head_t));
+	if (window->unregwq_ptr)
+		scif_free(window->unregwq_ptr, sizeof(wait_queue_head_t));
+#ifdef CONFIG_ML1OM
+	if (window->gttmapwq_ptr)
+		scif_free(window->gttmapwq_ptr, sizeof(wait_queue_head_t));
+#endif
 	scif_free(window, sizeof(*window));
 	return 0;
 }
@@ -798,7 +835,10 @@ struct reg_range_t *micscif_create_remote_window(struct endpt *ep, int nr_pages)
 	window->unreg_state = OP_IDLE;
 #if !defined(_MIC_SCIF_) && defined(CONFIG_ML1OM)
 	window->gttmap_state = OP_IDLE;
-	init_waitqueue_head(&window->gttmapwq);
+	if (!window->gttmapwq_ptr &&
+	    !(window->gttmapwq_ptr = scif_zalloc(sizeof(wait_queue_head_t))))
+		goto error_window;
+	init_waitqueue_head(window->gttmapwq_ptr);
 #endif
 #ifdef _MIC_SCIF_
 	micscif_setup_proxy_dma(ep);
@@ -843,6 +883,16 @@ void micscif_destroy_remote_window(struct endpt *ep, struct reg_range_t *window)
 				sizeof(*(window->page_ref_count)));
 #endif
 	window->magic = 0;
+	if (window->alloc_handle.allocwq_ptr)
+		scif_free(window->alloc_handle.allocwq_ptr, sizeof(wait_queue_head_t));
+	if (window->regwq_ptr)
+		scif_free(window->regwq_ptr, sizeof(wait_queue_head_t));
+	if (window->unregwq_ptr)
+		scif_free(window->unregwq_ptr, sizeof(wait_queue_head_t));
+#ifdef CONFIG_ML1OM
+	if (window->gttmapwq_ptr)
+		scif_free(window->gttmapwq_ptr, sizeof(wait_queue_head_t));
+#endif
 	scif_free(window, sizeof(*window));
 }
 
@@ -864,8 +914,12 @@ int micscif_map_window_pages(struct endpt *ep, struct reg_range_t *window, bool 
 	RMA_MAGIC(window);
 
 	pinned_pages = window->pinned_pages;
+	mic_dbg("MIC scif MAP: window nr_pages=%lld chunks=%lld | pinned nr_pages=%d chunks=%d\n",
+		(long long)window->nr_pages, (long long)window->nr_contig_chunks,
+		(int)pinned_pages->nr_pages, (int)pinned_pages->nr_contig_chunks);
 	for (j = 0, i = 0; j < window->nr_contig_chunks; j++, i += nr_pages) {
 		nr_pages = pinned_pages->num_pages[i];
+		mic_dbg("MIC scif MAP: chunk %d has num_pages[%d]=%d\n", j, i, nr_pages);
 #ifdef _MIC_SCIF_
 #ifdef CONFIG_ML1OM
 		/* phys_addr[] holds addresses as seen from the remote node
@@ -909,6 +963,15 @@ int micscif_map_window_pages(struct endpt *ep, struct reg_range_t *window, bool 
 #endif
 		window->dma_addr[j] =
 			page_to_phys(pinned_pages->pages[i]);
+		/*
+		 * 本地数组按【宿主页】记账，绝不能在这里乘以 SCIF_PEER_PAGE_FACTOR：
+		 * micscif_set_nr_pages() 会把这里的值读回 num_pages[]，而它只对
+		 * RMA_WINDOW_PEER 做 PEER→LOCAL 换算，SELF 窗口原样使用。若此处也换算，
+		 * 宿主自身窗口的页数会变成 4 倍，销毁时就会多解映射 4 倍的页
+		 * （实测：mic_smpt[i].ref_count < 0，随后 micscif_get_dma_addr BUG）。
+		 * 对端要的是「线上单位（4 KiB）」，那一份由 micscif_prep_remote_window()
+		 * 在写入对端窗口副本时按 HOST_PAGES_TO_PEER 打包。
+		 */
 		if (!tmp_wnd)
 			RMA_SET_NR_PAGES(window->dma_addr[j], nr_pages);
 #else
@@ -917,6 +980,15 @@ int micscif_map_window_pages(struct endpt *ep, struct reg_range_t *window, bool 
 			ep->remote_dev, nr_pages << PAGE_SHIFT);
 		if (err)
 			return err;
+		/*
+		 * 本地数组按【宿主页】记账，绝不能在这里乘以 SCIF_PEER_PAGE_FACTOR：
+		 * micscif_set_nr_pages() 会把这里的值读回 num_pages[]，而它只对
+		 * RMA_WINDOW_PEER 做 PEER→LOCAL 换算，SELF 窗口原样使用。若此处也换算，
+		 * 宿主自身窗口的页数会变成 4 倍，销毁时就会多解映射 4 倍的页
+		 * （实测：mic_smpt[i].ref_count < 0，随后 micscif_get_dma_addr BUG）。
+		 * 对端要的是「线上单位（4 KiB）」，那一份由 micscif_prep_remote_window()
+		 * 在写入对端窗口副本时按 HOST_PAGES_TO_PEER 打包。
+		 */
 		if (!tmp_wnd)
 			RMA_SET_NR_PAGES(window->dma_addr[j], nr_pages);
 #endif
@@ -957,7 +1029,7 @@ int micscif_unregister_window(struct reg_range_t *window)
 			goto done;
 		}
 retry:
-		err = wait_event_timeout(window->unregwq, 
+		err = wait_event_timeout(*window->unregwq_ptr, 
 			window->unreg_state != OP_IN_PROGRESS, NODE_ALIVE_TIMEOUT);
 		if (!err && scifdev_alive(ep))
 			goto retry;
@@ -1031,13 +1103,17 @@ int micscif_send_alloc_request(struct endpt *ep, struct reg_range_t *window)
 	/* Set up the Alloc Handle */
 	alloc->uop = SCIF_REGISTER;
 	alloc->state = OP_IN_PROGRESS;
-	init_waitqueue_head(&alloc->allocwq);
+	if (!alloc->allocwq_ptr &&
+	    !(alloc->allocwq_ptr = scif_zalloc(sizeof(wait_queue_head_t))))
+		return -ENOMEM;
+	init_waitqueue_head(alloc->allocwq_ptr);
 
 	/* Send out an allocation request */
 	msg.uop = SCIF_ALLOC_REQ;
 	msg.src = ep->port;
 	msg.payload[0] = ep->remote_ep;
-	msg.payload[1] = window->nr_pages;
+	/* 对端按它自己的页解释这个页数，故送出前换算 */
+	msg.payload[1] = HOST_PAGES_TO_PEER(window->nr_pages);
 	msg.payload[2] = (uint64_t)&window->alloc_handle;
 	msg.payload[3] = SCIF_REGISTER;
 	return micscif_nodeqp_send(ep->remote_dev, &msg, ep);
@@ -1071,9 +1147,23 @@ int micscif_prep_remote_window(struct endpt *ep, struct reg_range_t *window)
 	}
 retry:
 	/* Now wait for the response */
-	err = wait_event_timeout(alloc->allocwq, alloc->state != OP_IN_PROGRESS, NODE_ALIVE_TIMEOUT);
+	err = wait_event_timeout(*alloc->allocwq_ptr, alloc->state != OP_IN_PROGRESS, NODE_ALIVE_TIMEOUT);
 	if (!err && scifdev_alive(ep))
 		goto retry;
+	mic_dbg("MIC scif prep: 唤醒后 state=%d vaddr=0x%llx phys_addr=0x%llx nr_pages=%lld\n",
+		(int)alloc->state, (unsigned long long)(uint64_t)alloc->vaddr,
+		(unsigned long long)alloc->phys_addr, (long long)window->nr_pages);
+	if (OP_COMPLETED != alloc->state) {
+		pr_err("MIC scif prep: 分配未完成（state=%d），不再继续\n", (int)alloc->state);
+		return -ENOMEM;
+	}
+	mic_dbg("MIC scif prep: 唤醒后 state=%d vaddr=0x%llx phys_addr=0x%llx nr_pages=%lld\n",
+		(int)alloc->state, (unsigned long long)(uint64_t)alloc->vaddr,
+		(unsigned long long)alloc->phys_addr, (long long)window->nr_pages);
+	if (OP_COMPLETED != alloc->state) {
+		pr_err("MIC scif prep: 分配未完成（state=%d），不再继续\n", (int)alloc->state);
+		return -ENOMEM;
+	}
 
 	if (!err)
 		err = -ENODEV;
@@ -1106,6 +1196,19 @@ retry:
 	remote_window = scif_ioremap(alloc->phys_addr,
 		sizeof(*window), ep->remote_dev);
 
+	mic_dbg("MIC scif prep: ioremap(phys=0x%llx) -> %px\n",
+		(unsigned long long)alloc->phys_addr, remote_window);
+	/* phys_addr 必须是卡内存范围内的偏移；明显越界说明对端回值不对，
+	 * 此处不解引用，直接报错，避免把内核打崩。*/
+	if (alloc->phys_addr == 0 || alloc->phys_addr > (1ULL << 34)) {
+		pr_err("MIC scif prep: phys_addr 0x%llx 越界（卡内存 <= 16GiB），返回 -EIO\n",
+			(unsigned long long)alloc->phys_addr);
+		return -EIO;
+	}
+	mic_dbg("MIC scif prep: magic=0x%llx dma_lookup.offset=0x%llx nr_lookup=%d\n",
+		(unsigned long long)remote_window->magic,
+		(unsigned long long)remote_window->dma_addr_lookup.offset,
+		remote_window->nr_lookup);
 	RMA_MAGIC(remote_window);
 
 	/* Compute the number of lookup entries. 21 == 2MB Shift */
@@ -1190,12 +1293,44 @@ retry:
 			 */
 			memcpy_toio(tmp, &window->dma_addr[i], 
 				loop_nr_contig_chunks * sizeof(*window->dma_addr));
+		{
+			/*
+			 * 页数在 set_nr_pages 里被剥掉了，而对端要靠它算窗口边界，
+			 * 因此在这里按「线上单位」重新打包回去再发送。
+			 * （实测：不打包时对端看到 num_pages=0，随后 ENXIO。）
+			 */
+			int _m;
+			for (_m = 0; _m < loop_nr_contig_chunks; _m++) {
+				dma_addr_t _e = window->dma_addr[i + _m];
+				RMA_SET_NR_PAGES(_e,
+					HOST_PAGES_TO_PEER(window->num_pages[i + _m]));
+				memcpy_toio((char *)tmp + _m * sizeof(dma_addr_t), &_e,
+					sizeof(dma_addr_t));
+			}
+			__sync_synchronize();
+		}
 #else
 		/* Transfer the physical address array - this is the MIC address
 		 * as seen by the card
 		 */
 		memcpy_toio(tmp, &window->dma_addr[i], 
 			loop_nr_contig_chunks * sizeof(*window->dma_addr));
+		{
+			/*
+			 * 页数在 set_nr_pages 里被剥掉了，而对端要靠它算窗口边界，
+			 * 因此在这里按「线上单位」重新打包回去再发送。
+			 * （实测：不打包时对端看到 num_pages=0，随后 ENXIO。）
+			 */
+			int _m;
+			for (_m = 0; _m < loop_nr_contig_chunks; _m++) {
+				dma_addr_t _e = window->dma_addr[i + _m];
+				RMA_SET_NR_PAGES(_e,
+					HOST_PAGES_TO_PEER(window->num_pages[i + _m]));
+				memcpy_toio((char *)tmp + _m * sizeof(dma_addr_t), &_e,
+					sizeof(dma_addr_t));
+			}
+			__sync_synchronize();
+		}
 #endif
 		remaining_nr_contig_chunks -= loop_nr_contig_chunks;
 		i += loop_nr_contig_chunks;
@@ -1254,7 +1389,7 @@ int micscif_send_scif_register(struct endpt *ep, struct reg_range_t *window)
 		if (!(err = micscif_nodeqp_send(ep->remote_dev, &msg, ep))) {
 			micscif_set_nr_pages(ep->remote_dev, window);
 retry:
-			err = wait_event_timeout(window->regwq, 
+			err = wait_event_timeout(*window->regwq_ptr, 
 				window->reg_state != OP_IN_PROGRESS, NODE_ALIVE_TIMEOUT);
 			if (!err && scifdev_alive(ep))
 				goto retry;
@@ -1532,6 +1667,8 @@ int micscif_rma_copy(scif_epd_t epd, off_t loffset, void *addr, size_t len,
 		(roffset + (off_t)len < roffset))
 		return -EINVAL;
 
+	mic_dbg("MIC scif COPY: len=%zu loff=0x%llx roff=0x%llx dir=%d\n",
+		len, (unsigned long long)loffset, (unsigned long long)roffset, (int)dir);
 	remote_req.out_window = &remote_window;
 	remote_req.offset = roffset;
 	remote_req.nr_bytes = len;

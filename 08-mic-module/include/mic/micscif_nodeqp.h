@@ -142,7 +142,15 @@ struct allocmsg {
 	uint32_t		uop;
 	size_t			size;
 	enum micscif_msg_state	state;
-	wait_queue_head_t	allocwq;
+	/*
+	 * 等待队列单独分配，用指针引用。原因：本结构位于 packed 的
+	 * struct reg_range_t 内，内嵌等待队列会把其中的自旋锁放到非对齐
+	 * 地址（实测偏移 150，2 mod 4），而 LoongArch 内核态无法模拟
+	 * 非对齐的原子访问。填充长度与原内嵌大小相同，结构体大小与其余
+	 * 字段偏移保持不变，跨端布局不受影响。
+	 */
+	wait_queue_head_t	*allocwq_ptr;
+	unsigned char		_allocwq_pad[sizeof(wait_queue_head_t) - sizeof(void *)];
 };
 
 /* Interesting structure -- a little difficult because we can only

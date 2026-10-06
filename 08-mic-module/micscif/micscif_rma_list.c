@@ -127,6 +127,10 @@ int micscif_query_tcw(struct endpt *ep, struct micscif_rma_req *req)
 	uint64_t start_va_window, start_va_req = (uint64_t) req->va_for_temp;
 	uint64_t end_va_window, end_va_req = start_va_req + req->nr_bytes;
 
+	pr_debug("SCIFTCW: req va_for_temp=%p nr_bytes=0x%lx type=%d list_empty=%d\n",
+		req->va_for_temp, (unsigned long)req->nr_bytes, (int)req->type,
+		list_empty(req->head));
+
 	/*
 	 * HSD 4845254
 	 * Hack for the worst case scenario
@@ -139,6 +143,10 @@ int micscif_query_tcw(struct endpt *ep, struct micscif_rma_req *req)
 			struct reg_range_t, list_member);
 		end_va_window = (uint64_t) window->va_for_temp +
 			(window->nr_pages << PAGE_SHIFT);
+		pr_debug("SCIFTCW143: last window va_for_temp=%p nr_pages=%lld end_va_window=0x%llx start_va_req=0x%llx\n",
+			window->va_for_temp, (long long)window->nr_pages,
+			(unsigned long long)end_va_window,
+			(unsigned long long)start_va_req);
 		if (start_va_req > end_va_window)
 			return -ENXIO;
 	}
@@ -207,11 +215,30 @@ int micscif_query_window(struct micscif_rma_req *req)
 	uint64_t end_offset, offset = req->offset;
 	uint64_t tmp_min, nr_bytes_left = req->nr_bytes;
 
+	pr_debug("SCIFQUERY: req offset=0x%llx nr_bytes=0x%llx type=%d head=%p\n",
+		(unsigned long long)req->offset,
+		(unsigned long long)req->nr_bytes, (int)req->type,
+		req->head);
+
 	list_for_each(item, req->head) {
 		window = list_entry(item, 
 			struct reg_range_t, list_member);
+		/*
+		 * 长度必须按「窗口归属方」的页大小算：对端窗口是线上单位 4 KiB，
+		 * 自有窗口是本机宿主页。用错会把对端窗口放大 4 倍，使 WINDOW_FULL
+		 * 查找跨过并误摘相邻窗口（实测：对端 @0 的窗口因此被摘掉，
+		 * 随后的 14592 字节写找不到它而返回 ENXIO）。
+		 */
 		end_offset = window->offset +
-			(window->nr_pages << PAGE_SHIFT);
+			((window->type == RMA_WINDOW_PEER) ?
+			 ((uint64_t)window->nr_pages << SCIF_PROTO_PAGE_SHIFT) :
+			 ((uint64_t)window->nr_pages << PAGE_SHIFT));
+		pr_debug("SCIFQUERY: window offset=0x%llx nr_pages=%lld ncc=%lld type=%d ep=0x%llx end=0x%llx\n",
+			(unsigned long long)window->offset,
+			(long long)window->nr_pages,
+			(long long)window->nr_contig_chunks,
+			(int)window->type, (unsigned long long)window->ep,
+			(unsigned long long)end_offset);
 		if (offset < window->offset)
 			/* Offset not found! */
 			return -ENXIO;
