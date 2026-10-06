@@ -40,6 +40,25 @@
 
 ---
 
+## 仓库结构
+
+　　本树就是发布到 GitHub 的项目根目录。除九个包之外，文档与验收测试也随树交付（它们不安装到系统，只放在树里）：
+
+| 目录 | 内容 | 说明 |
+|---|---|---|
+| `00-build-tools` … `09-boot-images` | 九个包 | 见下一节的清单与安装顺序 |
+| `docs/` | 技术报告（12 章 ＋ 附录 A–M）与《KNC offload 编程手册》 | 先读 `docs/README_CN.md`（文档导读与排版约定） |
+| `tests/` | 验收测试套件 T0–T8 与两个辅助脚本 | 用法见 `tests/README_CN.md`；普通用户即可运行，路径全部可自动探测或按 `tests/config.sh` 覆盖 |
+| `images/` | 本文档用到的图片 | — |
+| `CHANGELOG_CN.md`、`CHANGELOG.md` | 总项目变更记录（按日期，最新在最尾端） | 细节在各子项目的 CHANGELOG |
+| `08-mic-module/patches/` | 下一次发布要并入模块源码树的改动文件 | 见该目录下的 README |
+
+　　每个子项目（九个包、`docs/`、`tests/`）各有一份 `CHANGELOG_CN.md` 与对应的英文版 `CHANGELOG.md`，以「一项功能更新」为单位、由旧到新排列，便于持续增编。
+
+　　**文档成对交付**：中文版文件名以 `_CN.md` 结尾，英文版是去掉 `_CN` 的同名文件（例如 `docs/README_CN.md` 与 `docs/README_CN.md`、`docs/08-migration-roadmap_CN.md` 与 `docs/08-migration-roadmap.md`）。正文里的相互引用一律指向同一语言的版本。
+
+---
+
 ## 一、包清单与安装顺序
 
 | 顺序 | 目录 | 内容 | 装到哪里 | 依赖 |
@@ -53,6 +72,8 @@
 | 6 | `07-mpss-myo` | offload 库 `libmyo-client.so`（公开 ABI 名 `@@MYO_1.0`） | `/usr/lib64`、`/usr/include` | 02 |
 | 7 | `08-mic-module` | 主机内核模块 `mic.ko` + modprobe/udev 配置 + 内核头 | `/lib/modules/$(uname -r)`、`/etc`、`/usr/include/mic` | — |
 | 8 | `09-boot-images` | 卡端引导镜像 `bzImage-knightscorner`、`initramfs-knightscorner.cpio.gz` | `/usr/share/mpss/boot` | — |
+| — | `docs/` | 技术报告与《KNC offload 编程手册》 | 不安装（随树交付） | — |
+| — | `tests/` | 验收测试套件（T0–T8 ＋ 两个辅助脚本） | 不安装（随树交付） | 02–09 |
 
 ## 二、逐包安装
 
@@ -199,6 +220,8 @@ sudo micctrl --useradd=<用户名>   # 主机侧 MicDir 与运行中的卡同时
 | `08-mic-module` | 沿用随附报告第三、六章记录的内核模块移植（`MAX_ORDER`、`del_timer_sync`、`from_timer`、`get_user_pages`、`tty_alloc_driver` 等一批接口更新） |
 | `09-boot-images` | 卡端 initramfs 已补 `auto mic0` 静态网口配置与授权密钥（原交付里没有，MPSS 正常流程是由主机侧 `mpssd` 下发的） |
 
+　　上表之外还有一处与**宿主页大小**有关的驱动修复，它不属于「工具链变严」这一类，而是移植到非 4 KiB 页宿主后暴露出来的：用户态按 4096 字节注册被驱动静默拒绝、`packed` 结构里内嵌等待队列导致自旋锁落在非对齐地址、RMA 拷贝按页步长算错导致只有第一页正确。改动文件在 `08-mic-module/patches/`（下一次发布并入模块源码树），判据与实测见 `docs/I-page-size-alignment_CN.md` 与 `08-mic-module/CHANGELOG_CN.md`。
+
 ## 六、已知问题与注意事项
 
 1. **特权边界**：读 sysfs 的功能（设备枚举、SKU、POST 码、Family/Model）普通用户即可；走 SCIF 的功能（序列号、UUID、显存/核心信息、温度、RAS）要先打开 `/dev/mic/scif`，该设备默认 `crw------- root root`。这也是 `micctrl` 装成 setuid root 的原因。
@@ -215,6 +238,7 @@ cd 08-mic-module && make clean && sudo make install
 　　它会自动装到新内核的 `/lib/modules/$(uname -r)/updates/` 并跑 `depmod`；`/etc/modules-load.d`、`modprobe.d`、udev 规则与内核版本无关，无需重做。新内核若又改了驱动用到的接口，`make` 会报编译错误，需按报错再补一处移植补丁（本版是按 7.1.13 改过的）。
 
 6. **`05-miccheck` 的版本号是构建期常量**：`make` 时通过 `MPSS_FLASH_VERSION`／`SMC_FW_VERSION` 写入；默认值取自实测的卡（flash `391`、SMC `1.17.6900`）。换卡后如自检报版本不匹配，用新的值重跑 `make install` 即可。
+8. **offload 的两条实测限制**（写入《KNC offload 编程手册》的对应章节）：`COIBufferCreate` 在本移植链上返回 `COI_OUT_OF_MEMORY(13)`，因此大数据走「入参区 ＋ 返回区 ＋ 卡端自行生成」；卡端程序的优化档需**逐源码实测**（有的源码在 `-O1`／`-O2` 下会在卡上崩，`-O0` 正常）。
 
 ## 七、卸载
 

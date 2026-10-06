@@ -40,6 +40,25 @@ The packaging of this release (the per-package wrapper Makefiles, `00-build-tool
 
 ---
 
+## Repository Layout
+
+ This tree *is* the project root as published on GitHub. Besides the nine packages, the documentation and the acceptance test suite ship with the tree (they are not installed anywhere, they simply live here):
+
+| Directory | Contents | Notes |
+|---|---|---|
+| `00-build-tools` … `09-boot-images` | The nine packages | See the list and install order in the next section |
+| `docs/` | Technical report (12 chapters plus appendices A–M) and the *KNC offload Programming Manual* | Start with `docs/README.md` (guide to the documents and the typographic conventions) |
+| `tests/` | Acceptance test suite T0–T8 plus two helper scripts | Usage in `tests/README.md`; it runs as an ordinary user and resolves every path by autodetection or from `tests/config.sh` |
+| `images/` | Images used by this document | — |
+| `CHANGELOG_CN.md`, `CHANGELOG.md` | Project-level change log (by date, newest at the bottom) | Details live in each sub-project's CHANGELOG |
+| `08-mic-module/patches/` | Files to be merged into the module source tree in the next release | See the README in that directory |
+
+Every sub-project — the nine packages, `docs/` and `tests/` — carries a `CHANGELOG_CN.md` and an English `CHANGELOG.md`, written one functional update per entry and ordered oldest first, so new entries are simply appended.
+
+**Documents ship in pairs**: the Chinese edition ends in `_CN.md`, and the English edition is the same name with `_CN` dropped (for example `docs/README_CN.md` and `docs/README.md`, or `docs/08-migration-roadmap_CN.md` and `docs/08-migration-roadmap.md`). Cross-references inside a document always point at the edition in the same language.
+
+---
+
 ## 1. Packages and Install Order
 
 | # | Directory | Contents | Installed to | Depends on |
@@ -53,6 +72,8 @@ The packaging of this release (the per-package wrapper Makefiles, `00-build-tool
 | 6 | `07-mpss-myo` | Offload library `libmyo-client.so` (public ABI names `@@MYO_1.0`) | `/usr/lib64`, `/usr/include` | 02 |
 | 7 | `08-mic-module` | Host kernel module `mic.ko`, modprobe/udev configuration, kernel headers | `/lib/modules/$(uname -r)`, `/etc`, `/usr/include/mic` | — |
 | 8 | `09-boot-images` | Card boot images `bzImage-knightscorner`, `initramfs-knightscorner.cpio.gz` | `/usr/share/mpss/boot` | — |
+| — | `docs/` | Technical report and the offload programming manual | Not installed (ships with the tree) | — |
+| — | `tests/` | Acceptance test suite (T0–T8 plus two helper scripts) | Not installed (ships with the tree) | 02–09 |
 
 ## 2. Installing the Packages
 
@@ -199,6 +220,8 @@ Code written in 2016 runs into two classes of problem on today's toolchain: **ar
 | `08-mic-module` | The kernel-module port documented in chapters 3 and 6 of the report (a batch of interface updates: `MAX_ORDER`, `del_timer_sync`, `from_timer`, `get_user_pages`, `tty_alloc_driver`, and others) |
 | `09-boot-images` | The card-side initramfs now carries a static `auto mic0` interface configuration and authorized keys. The original delivery had neither; in a normal MPSS flow the host-side `mpssd` supplies them |
 
+One further fix is not about stricter tooling but about the **host page size**, and it only surfaced after porting to a host whose page size is not 4 KiB: user-space registration in 4096-byte units was rejected silently by the driver, a wait queue embedded in a `packed` struct put a spinlock on an unaligned address, and the RMA copy path used a wrong per-page stride so only the first page arrived correctly. The changed files are in `08-mic-module/patches/` (merged into the module source tree in the next release); the criteria and measurements are in `docs/I-page-size-alignment.md` and `08-mic-module/CHANGELOG.md`.
+
 ## 6. Known Issues and Caveats
 
 1. **Privilege boundary.** Everything backed by sysfs — device enumeration, SKU, POST code, Family/Model — works as an ordinary user. Anything that goes over SCIF — serial number, UUID, memory and core information, temperature, RAS — must first open `/dev/mic/scif`, which is `crw------- root root` by default. This is exactly why `micctrl` is installed setuid root.
@@ -215,6 +238,7 @@ cd 08-mic-module && make clean && sudo make install
 It installs into the new kernel's `/lib/modules/$(uname -r)/updates/` and runs `depmod`. The `modules-load.d`, `modprobe.d` and udev files are kernel-independent and need no changes. If the new kernel has moved one of the interfaces the driver uses, `make` will fail to compile and a further port patch is needed — this release was adapted for 7.1.13.
 
 6. **`05-miccheck`'s version numbers are build-time constants.** They are written at `make` time from `MPSS_FLASH_VERSION` and `SMC_FW_VERSION`, defaulting to the values the card under test reported (flash `391`, SMC `1.17.6900`). If the self-test reports a version mismatch on another card, rebuild with that card's values.
+8. **Two measured offload limitations** (documented in the corresponding chapters of the *KNC offload Programming Manual*): `COIBufferCreate` returns `COI_OUT_OF_MEMORY(13)` on this port, so bulk data goes through "misc data plus return value plus card-side generation"; and the optimization level of a card-side program must be **measured per source file** — some sources crash on the card at `-O1`/`-O2` while `-O0` is fine.
 
 ## 7. Uninstalling
 
