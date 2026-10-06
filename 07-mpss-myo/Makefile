@@ -63,3 +63,10 @@ clean:
 	-$(MAKE) -C src clean
 	-rm -rf bin
 	-find . -name '*.o' -delete
+
+uninstall:
+	rm -f $(STAGE)/lib64/libmyo-client.so.0 $(STAGE)/lib64/libmyo-client.so
+	rm -f $(STAGE)/lib64/libmyo-service.so.0
+	rm -f $(STAGE)/include/myo.h $(STAGE)/include/myoimpl.h $(STAGE)/include/myotypes.h
+	@if [ -z "$(DESTDIR)" ]; then ldconfig; fi
+	@echo "已卸载 libmyo-client / libmyo-service 与 3 个头文件"

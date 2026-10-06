@@ -80,3 +80,22 @@ clean:
 	# 属主是 root；普通用户再构建时会报 "modules.order: Permission denied"。
 	# 删文件只需要目录可写，所以这里能直接清掉（清不掉时用 sudo rm -f）。
 	-rm -f modules.order Module.symvers
+
+# 卸载：镜像 install（modules_install/conf_install/dev_install/kdev_install）+ 本地安装的四类文件
+uninstall:
+	-$(MPSS_MAKE) modules_uninstall conf_uninstall dev_uninstall kdev_uninstall \
+		MIC_CARD_ARCH=k1om KERNEL_SRC=$(KERNEL_SRC) KERNEL_VERSION=$(KERNEL_VERSION) \
+		prefix=$(PREFIX) sysconfdir=/etc INSTALL_MOD_PATH=$(DESTDIR) DESTDIR=$(DESTDIR) 2>/dev/null || \
+		rm -f $(DESTDIR)/lib/modules/$(KERNEL_VERSION)/updates/mic.ko*
+	rm -f $(DESTDIR)$(SYSCONFDIR)/modules-load.d/mic.conf
+	rm -f $(STAGE)/lib/udev/rules.d/55-mic-perms.rules $(STAGE)/lib/udev/rules.d/90-mic0-net.rules
+	rm -f $(STAGE)/lib/systemd/system/mic0-net.service
+	rm -f $(STAGE)/libexec/mpss/mic0-up.sh
+	-rmdir $(STAGE)/libexec/mpss 2>/dev/null || true
+	@if [ -z "$(DESTDIR)" ]; then systemctl disable --now mic0-net 2>/dev/null || true; \
+		systemctl daemon-reload 2>/dev/null || true; udevadm control --reload-rules 2>/dev/null || true; \
+		depmod -a $(KERNEL_VERSION) 2>/dev/null || true; fi
+	@echo "已卸载 mic.ko / modules-load / udev 规则 / mic0-net 单元 / mic0-up.sh"
+	@echo "  提示：模块若仍在内存，执行 sudo modprobe -r mic 才彻底卸载"
+	@echo "  提示：/etc/udev/rules.d/{55-mic-perms,90-mic0-net}.rules 与 /etc/modprobe.d/zz-mic-test-blacklist.conf"
+	@echo "        非本次安装所放，未动；如需清理请手工处理"

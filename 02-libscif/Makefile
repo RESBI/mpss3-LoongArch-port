@@ -40,3 +40,9 @@ clean:
 	-$(MAKE) -f Makefile.mpss clean
 	-rm -f libscif.so libscif.so.0 libscif.map
 	-find . -maxdepth 1 -name '*.o' -delete
+
+uninstall:
+	rm -f $(STAGE)/lib64/libscif.so.0.0.1 $(STAGE)/lib64/libscif.so.0 $(STAGE)/lib64/libscif.so
+	rm -f $(STAGE)/include/scif.h $(STAGE)/include/scif_ioctl.h
+	@if [ -z "$(DESTDIR)" ]; then ldconfig; fi
+	@echo "已卸载 libscif"

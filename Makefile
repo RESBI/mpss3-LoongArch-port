@@ -15,3 +15,9 @@ install:
 
 clean:
 	@for p in $(PKGS); do $(MAKE) -C $$p clean || true; done
+
+# 卸载：进入各子项目执行各自的 uninstall（PREFIX/DESTDIR 原样透传）
+uninstall:
+	@for p in $(PKGS); do echo "=== uninstall $$p ==="; \
+		$(MAKE) -C $$p uninstall PREFIX=$(PREFIX) DESTDIR=$(DESTDIR) || exit 1; done
+	@echo "各子项目卸载完成；/etc/mic、日志与用户自建文件未动"

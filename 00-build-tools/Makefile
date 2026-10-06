@@ -29,3 +29,8 @@ install: build
 
 clean:
 	@echo "无需清理"
+
+uninstall:
+	rm -f $(STAGE)/bin/gen-symver-map $(STAGE)/bin/gen-defsym.py
+	-rmdir $(STAGE)/bin 2>/dev/null || true
+	@echo "已卸载 00-build-tools"

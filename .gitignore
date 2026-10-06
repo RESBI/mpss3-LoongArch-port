@@ -40,3 +40,6 @@ tests/build/
 *.k1om
 # 本机私有配置（各脚本自行 source，含本地路径/凭据）
 config.sh
+
+# 卸载改造前的本地备份（仅供回退，不入库）
+*.bak-uninstall

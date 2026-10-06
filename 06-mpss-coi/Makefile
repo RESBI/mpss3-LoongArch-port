@@ -72,3 +72,13 @@ install: build
 clean:
 	-$(MAKE) -f Makefile.mpss clean
 	-rm -rf build
+
+uninstall:
+	rm -f $(STAGE)/lib64/libcoi_host.so.0 $(STAGE)/lib64/libcoi_host.so
+	rm -f $(STAGE)/include/intel-coi/common/* $(STAGE)/include/intel-coi/sink/* \
+	      $(STAGE)/include/intel-coi/source/* $(STAGE)/include/intel-coi/internal/*
+	-rmdir $(STAGE)/include/intel-coi/common $(STAGE)/include/intel-coi/sink \
+	       $(STAGE)/include/intel-coi/source $(STAGE)/include/intel-coi/internal \
+	       $(STAGE)/include/intel-coi 2>/dev/null || true
+	@if [ -z "$(DESTDIR)" ]; then ldconfig; fi
+	@echo "已卸载 libcoi_host 与 intel-coi 头文件"

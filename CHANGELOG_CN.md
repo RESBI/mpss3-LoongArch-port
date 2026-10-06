@@ -72,3 +72,12 @@
 - **更正**　附录 I 的 I.12.6 原先"12 位页数上限"的论证**被源码与实测否证**，已改写为定案：卡端段表只写第一页（512 项）；卡端内核模块重建**列为可选路径**（附录 K 的 K.6，含配方与代价）。细节见 [docs/CHANGELOG_CN.md](docs/CHANGELOG_CN.md)。
 - **核对**　`patches/` 全部文件与龙机在编译源码 md5 一致；本地↔龙机发布树逐字节一致。
 
+## 2026-10-07 — 构建系统新增 `make uninstall`（各子项目独立实现 + 顶层汇总）
+
+- **新增**　顶层 `uninstall`：按 `$(PKGS)` 循环 `cd` 进各子项目并透传 `PREFIX`/`DESTDIR`，任一失败即中止。十个子项目各自实现 `uninstall`，**逐条镜像自身 `install` 的落点**；`08-mic-module/Makefile.mpss` 新增 `modules_uninstall`/`conf_uninstall`/`dev_uninstall`/`kdev_uninstall`，与 `install` 的四个子目标一一对应。
+- **安全约定**　只删 `install` 自己装的文件；目录仅用 `rmdir`（非空即保留），只有**完全由本项目创建**的目录才用 `rm -rf`（`/usr/src/miccheck`、`updates/mic.ko*`）；`systemctl`/`ldconfig`/`depmod`/`udevadm` 与 `install` 一样受 `if [ -z "$(DESTDIR)" ]` 约束，因此 `DESTDIR` 沙箱测试不会触碰真实系统。
+- **明确排除**　三处非本项目放置的文件在卸载时**只提示不删除**：`/etc/systemd/system/mpss.service`（手工覆盖单元）、`/etc/udev/rules.d/{55-mic-perms,90-mic0-net}.rules`（早期布局遗留）、`/etc/modprobe.d/zz-mic-test-blacklist.conf`（测试期手工添加）。
+- **验收方法**　① 逐文件核对：把每个 `install` 的落点与磁盘实际内容、`uninstall` 清单三方对照，删除路径全部有出处；② 沙箱对拍：每项目独立 `DESTDIR`，装 → 快照 → 卸 → 比较，判据「删漏 0、误删 0」；③ 反向误删测试：预置 4 个非本项目文件，卸载后必须全部仍在；④ 幂等：连跑两次均返回 0；⑤ 需 root 的 03/04/08 用 `sudo make -n uninstall` 逐行人工核对（03 先 `disable --now mpss` 再删文件，次序正确）。
+- **实测结果**　沙箱六项（00/02/05/06/07/09）全部通过：删漏 0、误删 0、幂等 0/0，删除数分别等于各自安装集（2/5/14/56/5/2）；03/04/08 空跑核对通过。回退用同目录下 `.bak-uninstall` 备份。
+
+

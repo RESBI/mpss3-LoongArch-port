@@ -104,3 +104,29 @@ kdev_install:
 	$(INSTALL_f) Module.symvers $(DESTDIR)$(kmodinstalldir)/scif.symvers
 	$(INSTALL_d) $(DESTDIR)$(kmodincludedir)
 	$(INSTALL_f) include/scif.h $(DESTDIR)$(kmodincludedir)
+
+# ---- 卸载目标（与 install 的四个子目标一一镜像）----
+modules_uninstall:
+	rm -rf $(INSTALL_MOD_PATH)/lib/modules/$(KERNEL_VERSION)/updates/mic.ko*
+
+conf_uninstall:
+ifneq ($(MIC_CARD_ARCH),)
+	rm -f $(DESTDIR)$(sysconfdir)/sysconfig/modules/mic.modules
+	rm -f $(DESTDIR)$(sysconfdir)/modprobe.d/mic.conf
+endif
+	rm -f $(DESTDIR)$(sysconfdir)/udev/rules.d/50-udev-mic.rules
+
+dev_uninstall:
+	rm -f $(DESTDIR)$(includedir)/scif_ioctl.h
+	rm -f $(DESTDIR)$(includedir)/mic/io_interface.h $(DESTDIR)$(includedir)/mic/mic_pm.h \
+	      $(DESTDIR)$(includedir)/mic/micras_api.h $(DESTDIR)$(includedir)/mic/micmca_api.h \
+	      $(DESTDIR)$(includedir)/mic/micpm_api.h
+ifneq ($(MIC_CARD_ARCH),)
+	rm -f $(DESTDIR)$(includedir)/mic/micbaseaddressdefine.h $(DESTDIR)$(includedir)/mic/micsboxdefine.h \
+	      $(DESTDIR)$(includedir)/mic/micdboxdefine.h
+endif
+	-rmdir $(DESTDIR)$(includedir)/mic 2>/dev/null || true
+
+kdev_uninstall:
+	rm -f $(DESTDIR)$(kmodinstalldir)/scif.symvers
+	rm -f $(DESTDIR)$(kmodincludedir)/scif.h

@@ -79,3 +79,13 @@ clean:
 	-$(MAKE) -f Makefile.mpss clean
 	-find . -name '*.o' -delete
 	-rm -f libmpssconfig/libmpssconfig.so* mpssd/mpssd micctrl/micctrl micctrl/micctrl_passwd
+
+uninstall:
+	@if [ -z "$(DESTDIR)" ]; then systemctl disable --now mpss 2>/dev/null || true; fi
+	rm -f $(STAGE)/lib64/libmpssconfig.so.0.0.1 $(STAGE)/lib64/libmpssconfig.so.0 $(STAGE)/lib64/libmpssconfig.so
+	rm -f $(STAGE)/include/mic/mpssconfig.h $(STAGE)/include/mic/libmpsscommon.h
+	rm -f $(STAGE)/sbin/mpssd $(STAGE)/sbin/micctrl
+	rm -f $(STAGE)/lib/systemd/system/mpss.service
+	@if [ -z "$(DESTDIR)" ]; then systemctl daemon-reload 2>/dev/null || true; ldconfig; fi
+	@echo "已卸载 libmpssconfig / mpssd / micctrl / mpss.service"
+	@echo "  提示：/etc/systemd/system/mpss.service 为手工覆盖单元，未动，如需删除请自行处理"

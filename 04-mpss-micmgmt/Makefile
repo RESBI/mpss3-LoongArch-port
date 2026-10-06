@@ -69,3 +69,10 @@ clean:
 	-rm -rf miclib/objs miclib/libs build-tmp
 	-find . -name '*.o' -delete
 	-rm -f apps/mpssinfo/mpssinfo apps/mpssflash/mpssflash apps/mpssflash/flash1 apps/micsmc/micsmc
+
+uninstall:
+	rm -f $(STAGE)/lib64/libmicmgmt.so.0.0.2 $(STAGE)/lib64/libmicmgmt.so.0 $(STAGE)/lib64/libmicmgmt.so
+	rm -f $(STAGE)/include/miclib.h $(STAGE)/include/ut_instr_event.h
+	rm -f $(STAGE)/bin/mpssinfo $(STAGE)/bin/mpssflash $(STAGE)/bin/micsmc
+	@if [ -z "$(DESTDIR)" ]; then ldconfig; fi
+	@echo "已卸载 libmicmgmt / mpssinfo / mpssflash / micsmc"

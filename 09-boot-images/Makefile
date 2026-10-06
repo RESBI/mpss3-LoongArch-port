@@ -36,3 +36,8 @@ install: build
 
 clean:
 	@echo "无需清理"
+
+uninstall:
+	rm -f $(BOOTDIR)/bzImage-knightscorner $(BOOTDIR)/initramfs-knightscorner.cpio.gz
+	-rmdir $(BOOTDIR) 2>/dev/null || true
+	@echo "已卸载启动镜像（$(BOOTDIR)）"

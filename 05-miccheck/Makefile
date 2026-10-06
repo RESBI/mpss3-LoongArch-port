@@ -46,3 +46,8 @@ clean:
 	-$(MAKE) -f Makefile.mpss clean
 	-find . -name '__pycache__' -type d -prune -exec rm -rf {} +
 	-rm -f _miccheck/common/version.py
+
+uninstall:
+	rm -f $(STAGE)/bin/miccheck
+	rm -rf $(STAGE)/src/miccheck
+	@echo "已卸载 miccheck（含 $(STAGE)/src/miccheck 模块目录）"
