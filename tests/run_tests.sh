@@ -1,6 +1,6 @@
 #!/bin/bash
 # 功能测试入口：T2 卡访问 → T3 SCIF 通讯 → T4 DMA/RMA → T5 COI offload → T6 较高压力 → T7 N 体重计算
-#               → T8 大数据量传输（默认 4 GiB，两端 checksum + 带宽）。
+#               → T8 大数据量传输（默认 4 GiB，两端 checksum + 带宽）→ T9 GEMM 浮点基准。
 #
 # 前提：系统已完成编译与安装、mic 模块已加载、MPSS 栈已启动、卡已 online，
 #       且 /dev/mic/scif 对**普通用户**可读写（tests/t1_install.sh 会修好）。
@@ -8,7 +8,7 @@
 # 重要：本入口**不需要 root** —— 客户端二进制应以普通用户身份运行：
 #   bash tests/run_tests.sh                 # 全部功能测试（完整规模）
 #   bash tests/run_tests.sh --quick         # 较小规模，快速回归
-#   bash tests/run_tests.sh --only t5       # 只跑某一阶段（t2…t8）
+#   bash tests/run_tests.sh --only t5       # 只跑某一阶段（t2…t9）
 set -u
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TESTS_DIR/lib/common.sh"
@@ -62,6 +62,7 @@ run_phase t5 "$TESTS_DIR/t5_offload.sh"
 run_phase t6 "$TESTS_DIR/t6_offload_stress.sh"
 run_phase t7 "$TESTS_DIR/t7_nbody.sh"
 run_phase t8 "$TESTS_DIR/t8_bigxfer.sh"
+run_phase t9 "$TESTS_DIR/t9_gemm_bench.sh"
 
 printf '\n################ 功能测试结束 ################\n'
 printf '  各阶段 PASS/FAIL 见上；日志在 %s/*.log\n' "$LOGD"
