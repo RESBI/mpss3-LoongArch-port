@@ -73,6 +73,14 @@
 - **Added probes (always on)** `MIC scif DESC-INCONSISTENT` (on read-back: chunk count, total pages, first zero chunk, first four packed values) and, at the failure site, the per-chunk span total against the bytes the window should hold plus the number of zero-count chunks — these distinguish "the peer's description is short" from "the lookup logic is wrong", and they are what settled this round.
 - **Impact** The "no card-side change" conclusion still holds: the host can detect and refuse an incomplete description instead of being dragged down by it.
 
+## 2026-10-07 — Diagnostics moved behind the `MIC_DEBUG` switch (silent by default; failure reasons stay visible)
+
+- **Changed**　The last seven always-on prints added for debugging in `include/mic/micscif_rma.h` now go through `mic_dbg()`: `RAW-SCAN`, `RAW-HEAD[n]`, `RAW-TAIL[n]` (raw values before page counts are stripped), `DESC-INCONSISTENT`, and the failure-path dumps `chunk %d: num_pages=...`, `(page unit used=...)` and `chunk spans total=...`.
+- **Kept always on** (these are failure *reasons*, not debug noise): `DESC-BAD ... refusing the copy` from `micscif_window_desc_valid()`, the twelve-bit guard in `scif_register`, upstream's `Addr not found` headline and every upstream `KERN_ERR`.
+- **Measured**　T4 **15/0** (still 0 accidents 30 seconds later); replaying the same bad input (a 32 MiB window): `RAW-SCAN` +**0**, `DESC-INCONSISTENT` +**0** (gated), `DESC-BAD` +**1** (reason still visible), `kernel BUG` +**0**, no `D` state, card `online`; a T8 64 MiB run right afterwards is still **12/12** with matching checksums. The dmesg scene shrinks from a multi-line dump to one line:
+  `MIC scif DESC-BAD (dst): type=2 nr_pages=8192 chunks=527 sum_of_chunks=8177 zero_count_chunks=15 -> refusing the copy`
+- **How to use**　Rebuild with `make MIC_DEBUG=1`, or enable these individually through dynamic debug; the strings stay in the module under both builds (verified: `RAW-SCAN`/`RAW-TAIL`/`DESC-INCONSISTENT`/`DESC-BAD` are all present).
+
 ## See also
 
 - Full investigation of page-size and struct layout: `docs/I-page-size-alignment.md`

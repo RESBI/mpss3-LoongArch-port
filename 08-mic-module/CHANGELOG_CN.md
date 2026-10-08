@@ -68,6 +68,14 @@
 - **新增探针（常开）**　`MIC scif DESC-INCONSISTENT`（读回端：段数、总页数、首个零值段、前 4 个打包值）与 BUG 现场的「各段跨度总和 vs 窗口应有字节数、零值段个数」——用来区分"对端描述短了"与"查找逻辑错了"，本轮正是靠它定的案。
 - **影响**　"卡端零改动"的结论依然成立：宿主能检测并拒绝不完整的描述，而不是被它拖死。
 
+## 2026-10-07 — 调试打印纳入 `MIC_DEBUG` 开关（默认静默；失败原因保留常开）
+
+- **变更**　`include/mic/micscif_rma.h` 中最后 7 处"因调试而常开"的打印改为 `mic_dbg()`：`RAW-SCAN`／`RAW-HEAD[n]`／`RAW-TAIL[n]`（剥离页数前的原始值转储）、`DESC-INCONSISTENT`、以及失败路径上的 `chunk %d: num_pages=…`／`(page unit used=…)`／`chunk spans total=…`。
+- **保留常开**（属于"失败原因"而非调试噪音）：`micscif_window_desc_valid()` 的 `DESC-BAD … refusing the copy`、`scif_register` 的 12 位守卫拒绝、上游原有的 `Addr not found` 标题与全部上游 `KERN_ERR`。
+- **实测**　T4 **15/0**（30 秒后事故 0）；用同一个坏输入（32 MiB 窗口）复现：`RAW-SCAN` 新增 **0**、`DESC-INCONSISTENT` 新增 **0**（已门控 ✓），`DESC-BAD` 新增 **1**（原因仍可见 ✓），`kernel BUG` 新增 **0**、无 `D` 状态、卡 `online` ✓；随后 T8 64 MiB 仍 **12/12**、两端 checksum 一致 ✓。dmesg 现场由多行转储精简为一行：
+  `MIC scif DESC-BAD (dst): type=2 nr_pages=8192 chunks=527 sum_of_chunks=8177 zero_count_chunks=15 -> refusing the copy`
+- **用法**　需要这些转储时 `make MIC_DEBUG=1` 重新构建安装，或用 dynamic debug 单独打开；两种构建下字符串都保留在模块内（已实测模块中存在 `RAW-SCAN`/`RAW-TAIL`/`DESC-INCONSISTENT`/`DESC-BAD`）。
+
 ## 相关文档
 
 - 页大小与结构体布局的完整调查：`docs/I-page-size-alignment_CN.md`
