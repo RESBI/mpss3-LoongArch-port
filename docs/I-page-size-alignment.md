@@ -200,14 +200,14 @@ flowchart TB
 
 ## I.8 Reproduction and Checks
 
-The commands used for the minimal reproduction and for checking it are below; scripts for all of them are left under `~/XeonPhiX100-LoongArch/`.
+The commands used for the minimal reproduction and for checking it are below; scripts for all of them are left under `${PROJ}/`.
 
 ```bash
 # power up and turn off the deep power states (to avoid unrelated variables)
-sudo bash ~/XeonPhiX100-LoongArch/off_92_bringup.sh
+sudo bash ${PROJ}/off_92_bringup.sh
 
 # a single offload test (with the diagnostic interceptor; for localization only, not part of the release)
-sudo bash ~/XeonPhiX100-LoongArch/off_93_run.sh
+sudo bash ${PROJ}/off_93_run.sh
 
 # turn on driver dynamic debug, then collect the log
 echo "module mic +p" > /sys/kernel/debug/dynamic_debug/control

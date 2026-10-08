@@ -6,7 +6,7 @@
 
 ![龙芯主机识别到 Xeon Phi 卡，并 SSH 登录卡内](images/screenshot.png)
 
-　　上图是实测那台机器：上半屏 `lspci` 认出 `04:00.0 Co-processor: Intel Corporation Xeon Phi coprocessor SE10/7120 series`，主机为龙芯 3A6000（AOSC OS，内核 `7.1.13-aosc-main-16k`，32 GiB 内存）；下半屏是 `ssh root@171.31.1.2` 登录卡内，`uname -a` 显示卡上内核 `2.6.38.8+mpss3.8.6`（k1om 架构），`/proc/cpuinfo` 显示 61 个核心。这张图概括了整条链路：龙芯主机 → PCIe 上的 Xeon Phi → 卡内的 Linux。
+　　上图是实测那台机器：上半屏 `lspci` 认出 `04:00.0 Co-processor: Intel Corporation Xeon Phi coprocessor SE10/7120 series`，主机为龙芯 3A6000（AOSC OS，内核 `7.1.13-aosc-main-16k`，32 GiB 内存）；下半屏是 `ssh root@<card-ip>` 登录卡内，`uname -a` 显示卡上内核 `2.6.38.8+mpss3.8.6`（k1om 架构），`/proc/cpuinfo` 显示 61 个核心。这张图概括了整条链路：龙芯主机 → PCIe 上的 Xeon Phi → 卡内的 Linux。
 
 ---
 
@@ -161,7 +161,7 @@ sudo micctrl --initdefaults
 ### 3.3 按本机情况改两行
 
 ```bash
-sudo sed -i 's|^Network .*|Network class=StaticPair micip=171.31.1.2 hostip=171.31.1.1 netbits=24 modhost=no modcard=yes mtu=64512|' /etc/mpss/mic0.conf
+sudo sed -i 's|^Network .*|Network class=StaticPair micip=<card-ip> hostip=<host-ip> netbits=24 modhost=no modcard=yes mtu=64512|' /etc/mpss/mic0.conf
 sudo sed -i 's|^BootOnStart .*|BootOnStart Enabled|' /etc/mpss/mic0.conf
 ```
 
@@ -208,7 +208,7 @@ WantedBy=multi-user.target
 ```bash
 sudo /usr/libexec/mpss/mic0-up.sh --dry-run   # 先看它要做什么（只打印，不动网络）
 sudo /usr/libexec/mpss/mic0-up.sh             # 真正配置
-ip -br addr show mic0                         # 期望：UP 且带 171.31.1.1/24
+ip -br addr show mic0                         # 期望：UP 且带 <host-ip>/24
 ```
 
 　　若更愿意交给 NetworkManager（AOSC 默认用它），先禁掉上面那个单元、再建连接 —— 两者同时配会互相覆盖：
@@ -216,7 +216,7 @@ ip -br addr show mic0                         # 期望：UP 且带 171.31.1.1/24
 ```bash
 sudo systemctl disable --now mic0-net.service
 sudo nmcli connection add type ethernet ifname mic0 con-name mic0 \
-     ipv4.method manual ipv4.addresses 171.31.1.1/24 ipv6.method disabled
+     ipv4.method manual ipv4.addresses <host-ip>/24 ipv6.method disabled
 sudo nmcli connection up mic0
 ```
 
@@ -228,7 +228,7 @@ mpssinfo                         # 读卡的 SKU／序列号／核数／温度�
 miccheck                         # 自检；全绿时输出 Status: OK
 sudo miccheck                    # 想看全绿就用 root 跑：其中「ras daemon 可用」一项走 SCIF，
                                  # 需要打开 root 独占的 /dev/mic/scif，普通用户会看到该项 fail
-ssh root@171.31.1.2              # 卡的地址；卡端镜像已含授权密钥
+ssh root@<card-ip>              # 卡的地址；卡端镜像已含授权密钥
 ```
 
 　　用 MPSS 自己的工具在卡上建用户并注入密钥（这是 `micctrl` 的完整管理路径，控制器经 SCIF 与卡上 `mpssd` 通信）：

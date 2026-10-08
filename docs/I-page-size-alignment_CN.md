@@ -200,14 +200,14 @@ flowchart TB
 
 ## I.8　复现与核查
 
-　　最小复现与核查用到的命令如下，均在 `~/XeonPhiX100-LoongArch/` 下留有脚本。
+　　最小复现与核查用到的命令如下，均在 ${PROJ}/ 下留有脚本。
 
 ```bash
 # 上电并关闭深度省电态（避免无关变量）
-sudo bash ~/XeonPhiX100-LoongArch/off_92_bringup.sh
+sudo bash ${PROJ}/off_92_bringup.sh
 
 # 单次 offload 测试（带诊断用拦截器，仅用于定位，不属于发布内容）
-sudo bash ~/XeonPhiX100-LoongArch/off_93_run.sh
+sudo bash ${PROJ}/off_93_run.sh
 
 # 打开驱动动态调试后取日志
 echo "module mic +p" > /sys/kernel/debug/dynamic_debug/control

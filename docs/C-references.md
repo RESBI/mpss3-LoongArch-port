@@ -220,7 +220,7 @@ The section Chapter 8, §8.3 (d) describes the measured run in October 2026 that
 | `_work/port_patches/diff_stat.py` | the algorithm behind "lines actually changed": a per-file unified diff, reporting +318 / -309 lines, 185 hunks, 28 files |
 | `_work/remote-build-status.md` | the summary record of this measured round (environment, five builds, change list, drift comparison) |
 
-The measured records for Gate 1 and the three steps that follow it (device recognised, card brought up, data plane) are another batch of files, all under `_work/` and under `~/XeonPhiX100-LoongArch/` on the server:
+The measured records for Gate 1 and the three steps that follow it (device recognised, card brought up, data plane) are another batch of files, all under `_work/` and under the project root on the server:
 
 | File | What it is |
 |---|---|
@@ -243,10 +243,10 @@ The fourth batch (the tool-side port), files and directories:
 
 | Location | What it is |
 |---|---|
-| `~/XeonPhiX100-LoongArch/mpss-userland/tar/` | the eight source packages taken from the delivery (libscif, mpss-metadata, gen-symver-map, mpss-daemon, mpss-micmgmt, miccheck, mpss-coi, mpss-myo) |
-| `~/XeonPhiX100-LoongArch/mpss-userland/src/` | the source trees unpacked and changed as described in Appendix E |
-| `~/XeonPhiX100-LoongArch/mpss-userland/stage/` | our own install prefix (`usr/lib64`, `usr/include`, `usr/include/mic`), so the components can compile against each other |
-| `~/XeonPhiX100-LoongArch/mpss-userland/logs/` | the build logs and root acceptance logs for every component |
-| `~/XeonPhiX100-LoongArch/patch*.py`, `gen_defsym.py` | the patch script for every change in Appendix E (idempotent, re-runnable) |
+| `mpss-userland/tar/` | the eight source packages taken from the delivery (libscif, mpss-metadata, gen-symver-map, mpss-daemon, mpss-micmgmt, miccheck, mpss-coi, mpss-myo) |
+| `mpss-userland/src/` | the source trees unpacked and changed as described in Appendix E |
+| `mpss-userland/stage/` | our own install prefix (`usr/lib64`, `usr/include`, `usr/include/mic`), so the components can compile against each other |
+| `mpss-userland/logs/` | the build logs and root acceptance logs for every component |
+| `patch*.py`, `gen_defsym.py` | the patch script for every change in Appendix E (idempotent, re-runnable) |
 | `_work/remote/g6_*.sh`, `g7_*.sh`, `g8_*.sh` | the driver scripts for each step (with timestamped logs) |
 

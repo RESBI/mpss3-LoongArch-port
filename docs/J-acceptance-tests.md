@@ -115,7 +115,7 @@ bash tests/precheck.sh
 sudo bash tests/perm_probe.sh
 ```
 
-The offload-related stages (T5 / T6 / T7) additionally need three things in the porter's hands: a k1om cross-compiler, a k1om sysroot, and the card-side dependency library directory (including the self-built k1om `libgomp.so.1`). Their locations are given by `K1OM_SDK` / `K1OM_CXX` / `COSLIB` in `tests/lib/common.sh` and can be overridden with environment variables; the card address defaults to `171.31.1.2` (`CARD_HOST` overrides it).
+The offload-related stages (T5 / T6 / T7) additionally need three things in the porter's hands: a k1om cross-compiler, a k1om sysroot, and the card-side dependency library directory (including the self-built k1om `libgomp.so.1`). Their locations are given by `K1OM_SDK` / `K1OM_CXX` / `COSLIB` in `tests/lib/common.sh` and can be overridden with environment variables; the card address defaults to `<card-ip>` (`CARD_HOST` overrides it).
 
 ---
 

@@ -120,7 +120,7 @@ flowchart TB
 | 闸门一 · 第三条 | 目标内核的实际页大小 | **16 KiB**：这台机器跑的就是 16 KB 页内核，构建也是按它做的；F3 那几处窄常量在 PSMI 关闭时没有被触发 |
 | 段一 | 设备被认出 | **过**：`/sys/class/mic/mic0` 全套节点、`/dev/mic0`、`/dev/mic/ctrl`、`/dev/mic/scif`，日志里 `mic_probe 4:0:0 as board #0` |
 | 段二 | 卡被点亮 | **过**：往 `/sys/class/mic/mic0/state` 写 `boot:linux:<bzImage>:<initramfs>` 之后 26 秒卡进 `online`，`boot_count=1`、`post_code=FF`、卡侧 SCIF `online` |
-| 段三 | 主机与卡之间逐字节往返 | **过**：主机侧 `mic0` 配 171.31.1.1、卡侧 171.31.1.2 之后，5 个小包加 10 个 60 KB 大包全部 0% 丢包，`ip neigh` 变 `REACHABLE` |
+| 段三 | 主机与卡之间逐字节往返 | **过**：主机侧 `mic0` 配 <host-ip>、卡侧 <card-ip> 之后，5 个小包加 10 个 60 KB 大包全部 0% 丢包，`ip neigh` 变 `REACHABLE` |
 
 　　几处必须写下来的细节。
 
@@ -195,7 +195,7 @@ flowchart TB
 
 　　二，**上层工具可用**：`libmicmgmt` 与 `mpssinfo` 读出卡的 `SKU C0PRQ-7120 P/A/X/D`、`Family 0x0b`、`Stepping C0`；`miccheck` 移植到 Python 3 后跑通主机侧默认测试的前三条；COI 与 MYO 两个 offload 库都编成，外部程序按公开 ABI 名链接通过，MYO 的调用真的进了库内代码路径。
 
-　　补一组更细的实测数字（细节见附录 E.7）：`micctrl --initdefaults` 已经能自己造出卡镜像目录（含用户、卡端网口配置 `auto mic0` + `address 171.31.1.2`、以及 ed25519／ecdsa／rsa 主机密钥），也就是说我们最初手工往卡端 initramfs 里塞网口配置与 authorized_keys 那一步，现在由 MPSS 自己完成；`mpssd` 以 systemd 单元（`Type=simple` + `-l`）常驻；主机与卡端 mpssd 的 MONITOR_START 握手成功（主机日志 `Monitor connection established`）；`miccheck` 的设备自检里「online 且 postcode=FF」「RAS daemon 可用」「flash 版本」三项通过。
+　　补一组更细的实测数字（细节见附录 E.7）：`micctrl --initdefaults` 已经能自己造出卡镜像目录（含用户、卡端网口配置 `auto mic0` + `address <card-ip>`、以及 ed25519／ecdsa／rsa 主机密钥），也就是说我们最初手工往卡端 initramfs 里塞网口配置与 authorized_keys 那一步，现在由 MPSS 自己完成；`mpssd` 以 systemd 单元（`Type=simple` + `-l`）常驻；主机与卡端 mpssd 的 MONITOR_START 握手成功（主机日志 `Monitor connection established`）；`miccheck` 的设备自检里「online 且 postcode=FF」「RAS daemon 可用」「flash 版本」三项通过。
 
 　　三，**改动量的分布很有说服力**：核心四件（约 2.4 万行 C）只动了三处源码，其余全是「新工具链变严」这一类与指令集无关的修补。这也是本章开头那个判断的实证：用户态这一层的失败模式是能看见、能改的。
 

@@ -120,7 +120,7 @@ bash tests/precheck.sh
 sudo bash tests/perm_probe.sh
 ```
 
-　　offload 相关阶段（T5／T6／T7）还需要移植者手上的三样东西：k1om 交叉编译器、k1om sysroot、卡端依赖库目录（含自建的 k1om `libgomp.so.1`）。它们的位置由 `tests/lib/common.sh` 里的 `K1OM_SDK`／`K1OM_CXX`／`COSLIB` 给出，可用环境变量覆盖；卡地址默认 `171.31.1.2`（`CARD_HOST` 可覆盖）。
+　　offload 相关阶段（T5／T6／T7）还需要移植者手上的三样东西：k1om 交叉编译器、k1om sysroot、卡端依赖库目录（含自建的 k1om `libgomp.so.1`）。它们的位置由 `tests/lib/common.sh` 里的 `K1OM_SDK`／`K1OM_CXX`／`COSLIB` 给出，可用环境变量覆盖；卡地址默认 `<card-ip>`（`CARD_HOST` 可覆盖）。
 
 ---
 

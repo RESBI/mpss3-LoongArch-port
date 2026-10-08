@@ -220,7 +220,7 @@ python _work\check_cites2.py
 | `_work/port_patches/diff_stat.py` | 「真实改动行数」的算法：逐文件 unified diff，输出 +318 / -309 行、185 个改动块、28 个文件 |
 | `_work/remote-build-status.md` | 这一轮实测的汇总记录（环境、五次构建、改动清单、漂移对照） |
 
-　　闸门一与后续三步（设备认出、卡被点亮、数据面）的实测记录另有一批文件，都在 `_work/` 与服务器上的 `~/XeonPhiX100-LoongArch/`：
+　　闸门一与后续三步（设备认出、卡被点亮、数据面）的实测记录另有一批文件，都在 `_work/` 与服务器上的 项目根目录：
 
 | 文件 | 是什么 |
 |---|---|
@@ -243,10 +243,10 @@ python _work\check_cites2.py
 
 | 位置 | 是什么 |
 |---|---|
-| `~/XeonPhiX100-LoongArch/mpss-userland/tar/` | 从交付里取出的八个源码包（libscif、mpss-metadata、gen-symver-map、mpss-daemon、mpss-micmgmt、miccheck、mpss-coi、mpss-myo） |
-| `~/XeonPhiX100-LoongArch/mpss-userland/src/` | 解包并按附录 E 改过的源码树 |
-| `~/XeonPhiX100-LoongArch/mpss-userland/stage/` | 自己的安装前缀（`usr/lib64`、`usr/include`、`usr/include/mic`），供各组件互相编译 |
-| `~/XeonPhiX100-LoongArch/mpss-userland/logs/` | 每个组件的构建日志与 root 验收日志 |
-| `~/XeonPhiX100-LoongArch/patch*.py`、`gen_defsym.py` | 附录 E 里每一条改动的补丁脚本（幂等，可重跑） |
+| `mpss-userland/tar/` | 从交付里取出的八个源码包（libscif、mpss-metadata、gen-symver-map、mpss-daemon、mpss-micmgmt、miccheck、mpss-coi、mpss-myo） |
+| `mpss-userland/src/` | 解包并按附录 E 改过的源码树 |
+| `mpss-userland/stage/` | 自己的安装前缀（`usr/lib64`、`usr/include`、`usr/include/mic`），供各组件互相编译 |
+| `mpss-userland/logs/` | 每个组件的构建日志与 root 验收日志 |
+| `patch*.py`、`gen_defsym.py` | 附录 E 里每一条改动的补丁脚本（幂等，可重跑） |
 | `_work/remote/g6_*.sh`、`g7_*.sh`、`g8_*.sh` | 每个步骤的驱动脚本（带时间戳日志） |
 

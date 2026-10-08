@@ -1,6 +1,6 @@
 # Appendix H — Offload Field Notes: the k1om Toolchain, libgomp and On-Card OpenMP
 
-Appendix F covers offload's three routes and their criteria; this appendix records **what was actually done by hand and what numbers came out of it**. Every step was carried out on real hardware — the LoongArch host with the card installed — and the logs are kept in `~/XeonPhiX100-LoongArch/offload-logs/`, so each step can be re-run.
+Appendix F covers offload's three routes and their criteria; this appendix records **what was actually done by hand and what numbers came out of it**. Every step was carried out on real hardware — the LoongArch host with the card installed — and the logs are kept in `offload-logs/`, so each step can be re-run.
 
 ---
 
@@ -27,8 +27,8 @@ The compiler in the SDK is an **x86_64 ELF** and cannot be executed directly on 
 The invocation, once settled (the `k1om-cc` script is exactly this, ready for `configure`/`make` to use directly):
 
 ```bash
-SROOT=~/XeonPhiX100-LoongArch/k1om-sdk/opt/mpss/3.8.6/sysroots/x86_64-mpsssdk-linux
-SYSR=~/XeonPhiX100-LoongArch/k1om-sdk/opt/mpss/3.8.6/sysroots/k1om-mpss-linux
+SROOT=${PROJ}/k1om-sdk/opt/mpss/3.8.6/sysroots/x86_64-mpsssdk-linux
+SYSR=${PROJ}/k1om-sdk/opt/mpss/3.8.6/sysroots/k1om-mpss-linux
 LD_LIBRARY_PATH=$SROOT/lib:$SROOT/usr/lib:$SROOT/usr/lib64 \
 $SROOT/usr/bin/k1om-mpss-linux/k1om-mpss-linux-gcc \
   -B$SROOT/usr/bin/k1om-mpss-linux/ \
@@ -295,7 +295,7 @@ A fuller investigation of page-size alignment (how to tell the symptoms apart, t
 
 ## H.11 Reproduction Checklist
 
-| Step | Script (under `~/XeonPhiX100-LoongArch/`) | Log (under `offload-logs/`) |
+| Step | Script (under `${PROJ}/`) | Log (under `offload-logs/`) |
 |---|---|---|
 | Unpack the SDK, get the k1om compiler working | `off_11_sdk2.sh`, `fix_sdk_symlinks.py` | `sdk-*.log` |
 | Build the first program and run it on the card | `off_13_build.sh`, `off_15_run.sh`, `off_16_cardrun.sh` | `k1om-run-*.log`, `card-run-*.log` |

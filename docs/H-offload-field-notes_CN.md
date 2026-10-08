@@ -1,6 +1,6 @@
 # 附录 H　offload 实操记录：k1om 工具链、libgomp 与卡上 OpenMP
 
-　　附录 F 讲的是 offload 的三条路线与判据，本附录记的是**实际动手做了什么、跑出了什么数**。全部步骤都在龙芯主机加卡的真机上完成，日志留在 `~/XeonPhiX100-LoongArch/offload-logs/`，可逐步重跑。
+　　附录 F 讲的是 offload 的三条路线与判据，本附录记的是**实际动手做了什么、跑出了什么数**。全部步骤都在龙芯主机加卡的真机上完成，日志留在 `offload-logs/`，可逐步重跑。
 
 ---
 
@@ -27,8 +27,8 @@
 　　固化后的调用方式（脚本 `k1om-cc` 即此内容，供 `configure`／`make` 直接使用）：
 
 ```bash
-SROOT=~/XeonPhiX100-LoongArch/k1om-sdk/opt/mpss/3.8.6/sysroots/x86_64-mpsssdk-linux
-SYSR=~/XeonPhiX100-LoongArch/k1om-sdk/opt/mpss/3.8.6/sysroots/k1om-mpss-linux
+SROOT=${PROJ}/k1om-sdk/opt/mpss/3.8.6/sysroots/x86_64-mpsssdk-linux
+SYSR=${PROJ}/k1om-sdk/opt/mpss/3.8.6/sysroots/k1om-mpss-linux
 LD_LIBRARY_PATH=$SROOT/lib:$SROOT/usr/lib:$SROOT/usr/lib64 \
 $SROOT/usr/bin/k1om-mpss-linux/k1om-mpss-linux-gcc \
   -B$SROOT/usr/bin/k1om-mpss-linux/ \
@@ -295,7 +295,7 @@ Code: … <380c3b7e> …    ← ldx.d  $s7, $s4, $t2
 
 ## H.11　复现清单
 
-| 步骤 | 脚本（在 `~/XeonPhiX100-LoongArch/`） | 日志（在 `offload-logs/`） |
+| 步骤 | 脚本（在 ${PROJ}/） | 日志（在 `offload-logs/`） |
 |---|---|---|
 | 解 SDK、跑通 k1om 编译器 | `off_11_sdk2.sh`、`fix_sdk_symlinks.py` | `sdk-*.log` |
 | 编出并上卡运行第一个程序 | `off_13_build.sh`、`off_15_run.sh`、`off_16_cardrun.sh` | `k1om-run-*.log`、`card-run-*.log` |

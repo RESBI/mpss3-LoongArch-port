@@ -6,7 +6,7 @@ Validated on: AOSC OS 13.3.1, kernel `7.1.13-aosc-main-16k`, gcc 15.3.0, glibc 2
 
 ![A LoongArch host seeing the Xeon Phi card, and an SSH session into it](images/screenshot.png)
 
-The screenshot above is the machine this port was validated on. The upper half shows `lspci` picking up `04:00.0 Co-processor: Intel Corporation Xeon Phi coprocessor SE10/7120 series` on a Loongson-3A6000 host running AOSC OS with kernel `7.1.13-aosc-main-16k` and 32 GiB of RAM. The lower half is an `ssh root@171.31.1.2` session on the card: `uname -a` reports the card's kernel, `2.6.38.8+mpss3.8.6` (k1om), and `/proc/cpuinfo` reports 61 cores. Between them, the picture covers the whole chain: LoongArch host, Xeon Phi over PCIe, Linux inside the card.
+The screenshot above is the machine this port was validated on. The upper half shows `lspci` picking up `04:00.0 Co-processor: Intel Corporation Xeon Phi coprocessor SE10/7120 series` on a Loongson-3A6000 host running AOSC OS with kernel `7.1.13-aosc-main-16k` and 32 GiB of RAM. The lower half is an `ssh root@<card-ip>` session on the card: `uname -a` reports the card's kernel, `2.6.38.8+mpss3.8.6` (k1om), and `/proc/cpuinfo` reports 61 cores. Between them, the picture covers the whole chain: LoongArch host, Xeon Phi over PCIe, Linux inside the card.
 
 ---
 
@@ -161,7 +161,7 @@ This writes `/etc/mpss/mic0.conf` and builds the card-side filesystem tree (the 
 ### 3.3 Adjust two lines for your machine
 
 ```bash
-sudo sed -i 's|^Network .*|Network class=StaticPair micip=171.31.1.2 hostip=171.31.1.1 netbits=24 modhost=no modcard=yes mtu=64512|' /etc/mpss/mic0.conf
+sudo sed -i 's|^Network .*|Network class=StaticPair micip=<card-ip> hostip=<host-ip> netbits=24 modhost=no modcard=yes mtu=64512|' /etc/mpss/mic0.conf
 sudo sed -i 's|^BootOnStart .*|BootOnStart Enabled|' /etc/mpss/mic0.conf
 ```
 
@@ -208,7 +208,7 @@ Two separate things are involved here:
 ```bash
 sudo /usr/libexec/mpss/mic0-up.sh --dry-run   # show what it would do (prints only)
 sudo /usr/libexec/mpss/mic0-up.sh             # apply it
-ip -br addr show mic0                         # expect: UP with 171.31.1.1/24
+ip -br addr show mic0                         # expect: UP with <host-ip>/24
 ```
 
 If you would rather have NetworkManager handle it (that is what AOSC OS uses), disable the unit first — running both will fight over the interface:
@@ -216,7 +216,7 @@ If you would rather have NetworkManager handle it (that is what AOSC OS uses), d
 ```bash
 sudo systemctl disable --now mic0-net.service
 sudo nmcli connection add type ethernet ifname mic0 con-name mic0 \
-     ipv4.method manual ipv4.addresses 171.31.1.1/24 ipv6.method disabled
+     ipv4.method manual ipv4.addresses <host-ip>/24 ipv6.method disabled
 sudo nmcli connection up mic0
 ```
 
@@ -228,7 +228,7 @@ mpssinfo                         # card SKU, serial, core count, temperature, fl
 miccheck                         # self-test; prints "Status: OK" when everything passes
 sudo miccheck                    # run as root for a full pass: the "ras daemon available"
                                  # check goes over SCIF and needs the root-only /dev/mic/scif
-ssh root@171.31.1.2              # the card's address; the boot image already carries authorized keys
+ssh root@<card-ip>              # the card's address; the boot image already carries authorized keys
 ```
 
 To create a user on the card and inject its keys using MPSS's own tooling — the full management path, in which the controller talks to the card's `mpssd` over SCIF:

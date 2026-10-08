@@ -1,6 +1,6 @@
 # 附录 E　工具端移植补丁清单
 
-　　这一份是本报告正文之外的施工记录：把 MPSS 3.8.6 的主机侧工具端搬到龙芯上，实际动过的每一处、以及每一处的判据。全部改动都有脚本可重跑，脚本与日志留在服务器上的 `~/XeonPhiX100-LoongArch/`（见第八、十二章的说明）。
+　　这一份是本报告正文之外的施工记录：把 MPSS 3.8.6 的主机侧工具端搬到龙芯上，实际动过的每一处、以及每一处的判据。全部改动都有脚本可重跑，脚本与日志留在服务器上的 项目根（见第八、十二章的说明）。
 
 ## E.1　构建结果总表
 
@@ -139,14 +139,14 @@
 | 项目 | 命令 | 实测结果 |
 |---|---|---|
 | 设备识别 | `micctrl --status` | `mic0: online (mode: linux image: /usr/share/mpss/boot/bzImage-knightscorner)` |
-| 配置与卡镜像生成 | `micctrl --initdefaults` | 生成 `/etc/mpss/mic0.conf` 与卡镜像目录 `/var/mpss/mic0`，其中已有 `etc/passwd`（root／sshd／nobody／nfsnobody／micuser／resbi，后两者由主机 passwd 合并而来）、`etc/network/interfaces`（`auto mic0` 加 `address 171.31.1.2`）、`etc/ssh` 下的 ed25519／ecdsa／rsa 主机密钥、`home/<user>/.ssh/authorized_keys` |
+| 配置与卡镜像生成 | `micctrl --initdefaults` | 生成 `/etc/mpss/mic0.conf` 与卡镜像目录 `/var/mpss/mic0`，其中已有 `etc/passwd`（root／sshd／nobody／nfsnobody／micuser／<user>，后两者由主机 passwd 合并而来）、`etc/network/interfaces`（`auto mic0` 加 `address <card-ip>`）、`etc/ssh` 下的 ed25519／ecdsa／rsa 主机密钥、`home/<user>/.ssh/authorized_keys` |
 | 库功能验证 | `verify_miclib`（14 个公开 API） | 普通用户下 7 项通过、7 项失败；**以 root 重跑 18 项全部通过** |
 | 读出的卡参数 | 同上 | SKU `C0PRQ-7120 P/A/X/D`、序列号 `ADKC50600016`、UUID `735f57a0-…`、61 核、显存 16,252,928 KB（约 15.5 GiB）、显存厂商 Samsung、核心温度 48 摄氏度、PCIe x1 @ 5 GT/s、Flash `2.1.02.0391`、卡上 OS `2.6.38.8+mpss3.8.6`、POST 码 `FF`、RAS 可用 |
 | 自检 | `miccheck` | **8 项全部通过，`Status: OK`**：主机侧 4 项（设备数、驱动已载、驱动看到的设备数、mpssd 在跑）与设备侧 4 项（online 且 postcode=FF、RAS daemon 可用、flash 版本 `391`、SMC 固件版本 `1.17.6900`） |
 | 守护进程 | `systemctl start mpss` | `active`；单元用 `Type=simple` + `mpssd -l`；日志里 mpssd 自己拼出卡的内核命令行 `quiet root=ramfs console=hvc0 cgroup_disable=memory highres=off noautogroup micpm=cpufreq_on;corec6_on;pc3_on;pc6_on` |
 | 主机↔卡握手 | 重启卡端 mpssd | 主机日志 `mic0: Monitor connection established`；卡端日志 `[Start] Connected to host mpssd success`；卡端 mpssd 线程数 1 → 3（说明端口 164 的监听线程已创建） |
 | offload 库运行时 | `probe_runtime` | MYO 的 `myoTicks()` 在 250 毫秒睡眠前后差 **250,101,315**（纳秒量纲与单调性都对），`myoWallTime()` 差 250,100 微秒；COI 在卡侧 daemon 缺席时返回错误码 5 而非崩溃 |
-| **SCIF 加用户闭环** | `micctrl --useradd=resbi` | 主机侧 MicDir 写入 `resbi` 与 `.ssh/authorized_keys`；**卡端 `/var/log/mpssd` 出现 `[UserAdd] 'resbi' Success`**；卡端 `/etc/passwd` 出现 `resbi:x:1000:1001:Resbi:/home/resbi:/bin/bash`，`/home/resbi/.ssh/` 下 `authorized_keys`（861 字节）与各 `.pub` 落地；随后以该身份登录成功：`uid=1000(resbi) gid=1001 groups=1001`，主机名 `knightscorner` |
+| **SCIF 加用户闭环** | `micctrl --useradd=<user>` | 主机侧 MicDir 写入 `<user>` 与 `.ssh/authorized_keys`；**卡端 `/var/log/mpssd` 出现 `[UserAdd] '<user>' Success`**；卡端 `/etc/passwd` 出现 `<user>:x:1000:1001:<User>:/home/<user>:/bin/bash`，`/home/<user>/.ssh/` 下 `authorized_keys`（861 字节）与各 `.pub` 落地；随后以该身份登录成功：`uid=1000(<user>) gid=1001 groups=1001`，主机名 `knightscorner` |
 
 　　其中最值得记的是「普通用户 7 通过、root 18 通过」这一组对照：它把 MPSS 工具在这台机器上的**特权边界**画了出来（见 E.7.2）。
 
@@ -185,23 +185,23 @@ retry:
 
 ### E.7.4　闭环：micctrl 在卡上建用户并注入密钥
 
-　　E.7.2 第二条那条时序约束补上之后，最初那个问题 ——「micctrl 怎么给卡上创建用户和注入 key」—— 就在龙芯上走完了全程。一次 `micctrl --useradd=resbi` 做了两件事：
+　　E.7.2 第二条那条时序约束补上之后，最初那个问题 ——「micctrl 怎么给卡上创建用户和注入 key」—— 就在龙芯上走完了全程。一次 `micctrl --useradd=<user>` 做了两件事：
 
-　　一是**离线**：在主机上的卡镜像目录里写入 `etc/passwd` 的 `resbi` 行，并把主机用户 `~/.ssh` 下的 `*.pub` 汇成 `<MicDir>/home/resbi/.ssh/authorized_keys`（这正是 `add_ssh_info()` 与 `create_authfile()` 的行为，见第四章 §4.8）。
+　　一是**离线**：在主机上的卡镜像目录里写入 `etc/passwd` 的 `<user>` 行，并把主机用户 `~/.ssh` 下的 `*.pub` 汇成 `<MicDir>/home/<user>/.ssh/authorized_keys`（这正是 `add_ssh_info()` 与 `create_authfile()` 的行为，见第四章 §4.8）。
 
 　　二是**上线**：经 SCIF 把同样的内容推给正在运行的卡 —— `user.c:1500` 的 `adduser_remote()` 连到 `{node 1, port 164}`，按 `libmpsscommon.h:43` 起的 opcode 表发 `MICCTRL_ADDUSER`、逐文件 `MICCTRL_AU_FILE`、再 `MICCTRL_AU_DONE`。卡端 `mpssd` 收到后落盘并记一行日志：
 
 ```text
-Sun Oct  4 19:48:42 2026: [UserAdd] 'resbi' Success
+[UserAdd] '<user>' Success
 ```
 
-　　随后 `ssh resbi@171.31.1.2` 直接登录成功（`uid=1000(resbi) gid=1001`）—— 这个用户与它的密钥都是 micctrl 造的、经 SCIF 送上去的，没有手工改过卡端镜像。
+　　随后 `ssh <user>@<card-ip>` 直接登录成功（`uid=1000(<user>) gid=1001`）—— 这个用户与它的密钥都是 micctrl 造的、经 SCIF 送上去的，没有手工改过卡端镜像。
 
-　　顺带记一条无害的告警：`[Warning] mic0: Create home directory /var/mpss/mic0/home/resbi failed: File exists` —— 因为 `--initdefaults` 已经建过这个目录，不影响结果。
+　　顺带记一条无害的告警：`[Warning] mic0: Create home directory /var/mpss/mic0/home/<user> failed: File exists` —— 因为 `--initdefaults` 已经建过这个目录，不影响结果。
 
 ## E.8　发布版：release
 
-　　把上面这些包整理成了一份可直接分发的发布树 `~/XeonPhiX100-LoongArch/release`（发布时打的包为 `release_v0.1.tar.gz`）。设计目标是「每个包一个目录，各自 `make install` 即可」，不依赖任何集中式安装脚本。
+　　把上面这些包整理成了一份可直接分发的发布树 `release/`（发布时打的包为 `release_v0.1.tar.gz`）。设计目标是「每个包一个目录，各自 `make install` 即可」，不依赖任何集中式安装脚本。
 
 ### E.8.1　结构
 

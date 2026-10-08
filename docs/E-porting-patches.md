@@ -1,6 +1,6 @@
 # Appendix E — Porting Patch Inventory
 
-This is a record of the construction work outside the main body of the report: every place that was actually touched while moving the MPSS 3.8.6 host-side tools to LoongArch, and the criterion for each one. Every change can be replayed by script; the scripts and logs are kept on the server under `~/XeonPhiX100-LoongArch/` (see Chapters 8 and 12).
+This is a record of the construction work outside the main body of the report: every place that was actually touched while moving the MPSS 3.8.6 host-side tools to LoongArch, and the criterion for each one. Every change can be replayed by script; the scripts and logs are kept on the server under the project root (see Chapters 8 and 12).
 
 ## E.1 — Build Results Summary
 
@@ -139,14 +139,14 @@ This section records "what each command actually produced on LoongArch after ins
 | Item | Command | Measured result |
 |---|---|---|
 | Device identification | `micctrl --status` | `mic0: online (mode: linux image: /usr/share/mpss/boot/bzImage-knightscorner)` |
-| Configuration and card image generation | `micctrl --initdefaults` | Generates `/etc/mpss/mic0.conf` and the card image directory `/var/mpss/mic0`, which now contains `etc/passwd` (root/sshd/nobody/nfsnobody/micuser/resbi, the last two merged in from the host passwd), `etc/network/interfaces` (`auto mic0` plus `address 171.31.1.2`), ed25519/ecdsa/rsa host keys under `etc/ssh`, and `home/<user>/.ssh/authorized_keys` |
+| Configuration and card image generation | `micctrl --initdefaults` | Generates `/etc/mpss/mic0.conf` and the card image directory `/var/mpss/mic0`, which now contains `etc/passwd` (root/sshd/nobody/nfsnobody/micuser/<user>, the last two merged in from the host passwd), `etc/network/interfaces` (`auto mic0` plus `address <card-ip>`), ed25519/ecdsa/rsa host keys under `etc/ssh`, and `home/<user>/.ssh/authorized_keys` |
 | Library function verification | `verify_miclib` (14 public APIs) | As an ordinary user, 7 passed and 7 failed; **rerun as root, all 18 passed** |
 | Card parameters read out | same as above | SKU `C0PRQ-7120 P/A/X/D`, serial number `ADKC50600016`, UUID `735f57a0-…`, 61 cores, memory 16,252,928 KB (about 15.5 GiB), memory vendor Samsung, core temperature 48 degrees Celsius, PCIe x1 @ 5 GT/s, Flash `2.1.02.0391`, on-card OS `2.6.38.8+mpss3.8.6`, POST code `FF`, RAS available |
 | Self-test | `miccheck` | **all 8 items pass, `Status: OK`**: 4 host-side items (device count, driver loaded, device count seen by the driver, mpssd running) and 4 device-side items (online with postcode=FF, RAS daemon available, flash version `391`, SMC firmware version `1.17.6900`) |
 | Daemon | `systemctl start mpss` | `active`; the unit uses `Type=simple` + `mpssd -l`; in the log, mpssd assembles the card's kernel command line itself: `quiet root=ramfs console=hvc0 cgroup_disable=memory highres=off noautogroup micpm=cpufreq_on;corec6_on;pc3_on;pc6_on` |
 | Host↔card handshake | restarting the card-side mpssd | Host log: `mic0: Monitor connection established`; card-side log: `[Start] Connected to host mpssd success`; card-side mpssd thread count 1 → 3 (showing that the listening thread on port 164 has been created) |
 | Offload library at runtime | `probe_runtime` | MYO's `myoTicks()` differs by **250,101,315** across a 250 ms sleep (both the nanosecond scale and the monotonicity are right), and `myoWallTime()` differs by 250,100 microseconds; when the card-side daemon is absent, COI returns error code 5 instead of crashing |
-| **SCIF plus user closed loop** | `micctrl --useradd=resbi` | On the host side, MicDir gains `resbi` and `.ssh/authorized_keys`; **on the card side, `/var/log/mpssd` shows `[UserAdd] 'resbi' Success`**; on the card side, `/etc/passwd` gains `resbi:x:1000:1001:Resbi:/home/resbi:/bin/bash`, and under `/home/resbi/.ssh/` the `authorized_keys` (861 bytes) and the various `.pub` files land; logging in as that identity then succeeds: `uid=1000(resbi) gid=1001 groups=1001`, hostname `knightscorner` |
+| **SCIF plus user closed loop** | `micctrl --useradd=<user>` | On the host side, MicDir gains `<user>` and `.ssh/authorized_keys`; **on the card side, `/var/log/mpssd` shows `[UserAdd] '<user>' Success`**; on the card side, `/etc/passwd` gains `<user>:x:1000:1001:<User>:/home/<user>:/bin/bash`, and under `/home/<user>/.ssh/` the `authorized_keys` (861 bytes) and the various `.pub` files land; logging in as that identity then succeeds: `uid=1000(<user>) gid=1001 groups=1001`, hostname `knightscorner` |
 
 The most notable entry is the pairing of "7 pass as an ordinary user, 18 pass as root": it draws the **privilege boundary** of the MPSS tools on this machine (see E.7.2).
 
@@ -185,23 +185,23 @@ When the connection target does not exist: wait for the timeout → send a termi
 
 ### E.7.4 — Closed Loop: micctrl Creates a User on the Card and Injects Keys
 
-Once the timing constraint of the second point in E.7.2 was satisfied, the original question — "how does micctrl create users and inject keys on the card" — ran all the way through on LoongArch. A single `micctrl --useradd=resbi` did two things:
+Once the timing constraint of the second point in E.7.2 was satisfied, the original question — "how does micctrl create users and inject keys on the card" — ran all the way through on LoongArch. A single `micctrl --useradd=<user>` did two things:
 
-First, **offline**: it writes the `resbi` line into `etc/passwd` in the host-side card image directory, and collects the `*.pub` files under the host user's `~/.ssh` into `<MicDir>/home/resbi/.ssh/authorized_keys` (this is exactly the behavior of `add_ssh_info()` and `create_authfile()`, see §4.8 of Chapter 4).
+First, **offline**: it writes the `<user>` line into `etc/passwd` in the host-side card image directory, and collects the `*.pub` files under the host user's `~/.ssh` into `<MicDir>/home/<user>/.ssh/authorized_keys` (this is exactly the behavior of `add_ssh_info()` and `create_authfile()`, see §4.8 of Chapter 4).
 
 Second, **online**: over SCIF it pushes the same content to the running card — `adduser_remote()` at `user.c:1500` connects to `{node 1, port 164}` and, following the opcode table starting at `libmpsscommon.h:43`, sends `MICCTRL_ADDUSER`, then `MICCTRL_AU_FILE` for each file, then `MICCTRL_AU_DONE`. The card-side `mpssd` writes it to disk and logs one line:
 
 ```text
-Sun Oct  4 19:48:42 2026: [UserAdd] 'resbi' Success
+[UserAdd] '<user>' Success
 ```
 
-A subsequent `ssh resbi@171.31.1.2` logs in directly (`uid=1000(resbi) gid=1001`) — this user and its keys were both created by micctrl and sent up over SCIF, with no hand-editing of the card-side image.
+A subsequent `ssh <user>@<card-ip>` logs in directly (`uid=1000(<user>) gid=1001`) — this user and its keys were both created by micctrl and sent up over SCIF, with no hand-editing of the card-side image.
 
-One harmless warning, worth noting in passing: `[Warning] mic0: Create home directory /var/mpss/mic0/home/resbi failed: File exists` — `--initdefaults` had already created that directory; it does not affect the result.
+One harmless warning, worth noting in passing: `[Warning] mic0: Create home directory /var/mpss/mic0/home/<user> failed: File exists` — `--initdefaults` had already created that directory; it does not affect the result.
 
 ## E.8 — Release: release
 
-The packages above were organized into a directly distributable release tree, `~/XeonPhiX100-LoongArch/release` (the tarball built at release time is `release_v0.1.tar.gz`). The design goal is "one directory per package, each with its own `make install`", with no dependency on any centralized installation script.
+The packages above were organized into a directly distributable release tree, `release/` (the tarball built at release time is `release_v0.1.tar.gz`). The design goal is "one directory per package, each with its own `make install`", with no dependency on any centralized installation script.
 
 ### E.8.1 — Structure
 
