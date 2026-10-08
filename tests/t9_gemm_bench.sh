@@ -30,7 +30,7 @@ SRCS="$TESTS_DIR/src"
 # 1) 卡端 sink：与 T7 相同，-O0 避免 -O2 的崩溃问题
 SINK="$LOGD/gemm_sink"
 k1om_cxx -O0 -fopenmp -rdynamic -I"$KSYS/usr/include" "$SRCS/gemm_sink.cpp" \
-    -L"$KSYS/usr/lib64" -lcoi_device -L"$COSLIB" -lgomp -lpthread -ldl -lrt \
+    -L"$KSYS/usr/lib64" -lcoi_device -L"$COSLIB" -lgomp -lpthread -ldl -lrt -lm \
     -Wl,-rpath,/tmp -o "$SINK" >>"$LOGD/$PH.log" 2>&1
 if [ -f "$SINK" ]; then
   record PASS $PH "交叉编译卡端 gemm_sink"
