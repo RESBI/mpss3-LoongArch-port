@@ -43,3 +43,18 @@ config.sh
 
 # 卸载改造前的本地备份（仅供回退，不入库）
 *.bak-uninstall
+
+# 测试用的临时构建目录：里面只剩编译出来的可执行文件，不入库
+tests/tmp/
+
+# 以下几条是**保留在本机、但不入库**的历史遗留文件。
+# 保留原因：它们是早先扁平布局下的产物，删掉会丢掉对照；但入库只会与
+# tests/src/ 下的现行版本重复，且路径极易被误用（脚本引用的是 tests/src/）。
+tests/nbody_host.cpp
+tests/nbody_sink.cpp
+tests/nbody_vec.cpp
+# T9 变更记录的草稿片段，内容已并入 tests/CHANGELOG_T9.md 与各处 CHANGELOG
+CHANGELOG_T9_entry.txt
+
+# 打补丁前的源码本地备份
+*.localbak
